@@ -38,6 +38,10 @@
   
 
   
+    <!-- gitalk comments -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+  
 
   
 <meta name="generator" content="Hexo 4.2.1"></head>
@@ -163,6 +167,21 @@
 
 
 
+
+  <div id="gitalk-container"></div>
+  <script>
+    const gitalk = new Gitalk({
+      clientID: 'bd06b974cf43c895da86',
+      clientSecret: '9c362975876662b12d2682cc66c2302f141a01ce',
+      repo: 'blogGitalk',
+      owner: 'N0puple',
+      admin: [''],
+      id: location.pathname,
+      distractionFreeMode: false
+    })
+
+    gitalk.render('gitalk-container')
+  </script>
 
 
     </div>
