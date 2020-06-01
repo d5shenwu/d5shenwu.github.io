@@ -12,11 +12,11 @@ tags:
     | keyagent | depiction                                                 |
     +----------+-----------------------------------------------------------+
     | WhoamI   | N0puple                                                   |
-    |          |      --http://www.n0puple.com/                            |
-    | FindMe   | github                                                    |
-    |          |      --https://github.com/N0puple/                        |
+    |          |      -- http://www.n0puple.com/                           |
+    | FindMe   | QQ                                                        |
+    |          |      -- TWpJMU9UUXdOek0xTkE9PQ==                          |
     | WhatIdo  | Penetration test engineer                                 |
-    |          |      --Currently focused on pentest and web security.     |
+    |          |      -- Currently focused on pentest and web security.    |
     +----------+-----------------------------------------------------------+
     5 rows in set (0.000 sec)
 ```
