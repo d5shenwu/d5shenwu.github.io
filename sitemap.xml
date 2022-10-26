@@ -2,18 +2,9 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://n0puple.github.io/2022/10/24/hello-world/</loc>
+    <loc>https://n0puple.github.io/2021/10/21/Moodle_3.11_%E5%89%8D%E5%8F%B0RCE_CVE-2021-36394/</loc>
     
-    <lastmod>2022-10-25</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://n0puple.github.io/2022/10/24/pass_template/</loc>
-    
-    <lastmod>2022-10-25</lastmod>
+    <lastmod>2022-10-26</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -46,6 +37,27 @@
   
   <url>
     <loc>https://n0puple.github.io/tags/PHP/</loc>
+    <lastmod>2022-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://n0puple.github.io/tags/Moodle/</loc>
+    <lastmod>2022-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://n0puple.github.io/tags/RCE/</loc>
+    <lastmod>2022-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://n0puple.github.io/tags/%E6%9C%AA%E6%8E%88%E6%9D%83/</loc>
     <lastmod>2022-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
