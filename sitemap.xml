@@ -31,7 +31,7 @@
 
   <url>
     <loc>https://n0puple.github.io/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -39,49 +39,49 @@
   
   <url>
     <loc>https://n0puple.github.io/tags/%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://n0puple.github.io/tags/PHP/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://n0puple.github.io/tags/Moodle/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://n0puple.github.io/tags/RCE/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://n0puple.github.io/tags/%E6%9C%AA%E6%8E%88%E6%9D%83/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://n0puple.github.io/tags/WordPress/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://n0puple.github.io/tags/%E5%AF%B9%E8%B1%A1%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
@@ -90,7 +90,7 @@
   
   <url>
     <loc>https://n0puple.github.io/categories/PHP%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <lastmod>2022-10-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
