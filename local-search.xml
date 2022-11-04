@@ -171,6 +171,43 @@
   
   
   <entry>
+    <title>XunRuiCMS_变量覆盖导致的前台RCE</title>
+    <link href="/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/"/>
+    <url>/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/</url>
+    
+    <content type="html"><![CDATA[<p>本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。</p><h2 id="0x00-漏洞简介"><a href="#0x00-漏洞简介" class="headerlink" title="0x00 漏洞简介"></a>0x00 漏洞简介</h2><p>先后在两篇文章中看到了这个<code>cms</code>，利用方式感觉很有意思，遂跟着复现一波写下了这篇文章。</p><h2 id="0x01-影响范围"><a href="#0x01-影响范围" class="headerlink" title="0x01 影响范围"></a>0x01 影响范围</h2><p>影响在此修复之前的版本 </p><p><a href="https://gitee.com/dayrui/xunruicms/commit/80e2d8f3008384d926c64163b7334a260edc0a51">https://gitee.com/dayrui/xunruicms/commit/80e2d8f3008384d926c64163b7334a260edc0a51</a></p><p>此处测试环境为修复的前一个版本，可 git 下载后执行命令</p><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs php">git checkout fad7b01<br></code></pre></td></tr></table></figure><h2 id="0x02-漏洞分析"><a href="#0x02-漏洞分析" class="headerlink" title="0x02 漏洞分析"></a>0x02 漏洞分析</h2><p>我们可以根据修复记录来复现漏洞</p><h3 id="变量覆盖"><a href="#变量覆盖" class="headerlink" title="变量覆盖"></a>变量覆盖</h3><p>首先定位到 <code>dayrui/Fcms/Core/View.php</code>的<code>display</code>方法，218 行存在一个 <code>extract</code>函数</p><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs php"><span class="hljs-title function_ invoke__">extract</span>(<span class="hljs-variable">$this</span>-&gt;_options, EXTR_OVERWRITE);<br></code></pre></td></tr></table></figure><p>第二个参数为 <code>EXTR_OVERWRITE</code>，也就是可以覆盖已存在的变量，那么只要 <code>$this-&gt;_options</code>可控，我们就可以得到一个变量覆盖漏洞，因此寻找赋值的位置<br>同样在该文件</p><p><img src="1644246657397-22191b3d-1b41-4a65-8632-f86a52e8d5bc.png" alt="image.png"></p><p>从注释可以看到这个方法是用来设置模板变量的，这里将传入的第一个参数全部放入了 <code>$this-&gt;_options</code><br><code>dayrui/Fcms/Control/Api/Api.php</code>中的 <code>template</code>方法使用 <code>assign</code>来设置模板变量，并且参数可以通过 <code>GET</code>得到，因此可控，间接导致了 <code>$this-&gt;_options</code>可控，之后又进入 <code>display</code>方法，触发 <code>extract</code>，因此存在变量覆盖漏洞</p><p><img src="1644247366176-b26669e0-0b2c-4766-a3bb-5e67f99e4f89.png" alt="image.png"></p><p>现在继续跟进 <code>display</code>方法</p><p><img src="1644324477787-3e232cfe-ed7f-436a-9a9e-5ea191e654a7.png" alt="image.png"></p><p>由于存在变量覆盖漏洞，因此 <code>$phpcmf_name</code>和 <code>$phpcmf_dir</code>都可控，之后进入 <code>get_file_name</code>方法，两个参数都可控，这个方法就不跟进看了，最后得到的 <code>$_view_file</code>可控，继续往下走</p><p><img src="1644324685908-e4ac4fa3-e46e-481d-93ff-1bb4f60f9311.png" alt="image.png"></p><p><code>load_view_file</code>方法会根据 <code>$_view_file</code>生成一个 <code>cache file</code>并返回文件路径，最后包含该文件</p><h3 id="命令执行"><a href="#命令执行" class="headerlink" title="命令执行"></a>命令执行</h3><p>现在我们需要找到一处可以命令执行的地方，而 <code>View.php</code>中有一个 <code>list_tag</code>方法</p><p><img src="1644326182325-98df5d65-533c-44fb-81f5-4eec886f4a5b.png" alt="image.png"></p><p>这里存在一个 <code>switch ... case ...</code>当 <code>$system[&#39;action&#39;]</code>为 <code>function</code>时就可以进入上面的分支，从而有机会被执行</p><p>在变量覆盖块，我们讲到了可以包含模板文件，我们可以选择 <code>dayrui/Fcms/View/api_related.html</code></p><p>生成 <code>cache</code>文件后包含，在被包含的文件中，我们可以找到</p><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs php"><span class="hljs-variable language_">$this</span>-&gt;<span class="hljs-title function_ invoke__">list_tag</span>(<span class="hljs-string">&quot;action=module module=<span class="hljs-subst">$mid</span> siteid=<span class="hljs-subst">$site</span> where=<span class="hljs-subst">$where</span> order=updatetime page=1 pagesize=<span class="hljs-subst">$pagesize</span> urlrule=<span class="hljs-subst">$urlrule</span>&quot;</span>);<br></code></pre></td></tr></table></figure><p>因此可以调用到 <code>list_tag</code>方法，并且可以用变量覆盖来控制参数，接下来我们进入 <code>list_tag</code></p><p><img src="1644326537174-64b2314c-eb4b-4c14-b1a5-030f46e3d5c5.png" alt="image.png"></p><p><code>$params</code>就是传进来的参数，也就是上面那一大串，部分为我们所控</p><p>这里使用 <code>explode</code>，按空格分割并写入数组，之后取出数组每一项用 <code>=</code>分割，分别得到 <code>$var</code>和 <code>$val</code>，最后如果存在 <code>$system[$var]</code>，就会用处理过的<code>$val</code>覆盖</p><p>因此我们可以利用可控的变量来覆盖 <code>$system[&#39;action&#39;]</code>从而进入 <code>function</code>分支，到后面就比较简单了，这里不多赘述。</p><h2 id="0x03-漏洞复现"><a href="#0x03-漏洞复现" class="headerlink" title="0x03 漏洞复现"></a>0x03 漏洞复现</h2><p>因为调用 <code>display</code>的地方使用了 <code>ob_start</code>，因此一般的命令都没有回显，所以使用的弹计算器的方式</p><p>自己弹了一下自己，只是我的计算器早就被我删了</p><p><img src="1644334744634-94e79d78-cf97-4ec2-a5a3-d576a8405421.png" alt="image.png"></p><h2 id="0x04-总结"><a href="#0x04-总结" class="headerlink" title="0x04 总结"></a>0x04 总结</h2><p>利用方式很有意思，但是有一点点复杂，有兴趣的话可以自己手调一下，会有更多的收获的，若是有什么疑问的地方，欢迎私聊交流讨论。</p><h2 id="0x05-参考链接"><a href="#0x05-参考链接" class="headerlink" title="0x05 参考链接"></a>0x05 参考链接</h2><ul><li><a href="https://xz.aliyun.com/t/10002">https://xz.aliyun.com/t/10002</a></li><li><a href="https://forum.butian.net/share/1072">https://forum.butian.net/share/1072</a></li></ul>]]></content>
+    
+    
+    <categories>
+      
+      <category>PHP漏洞复现</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>漏洞复现</tag>
+      
+      <tag>PHP</tag>
+      
+      <tag>RCE</tag>
+      
+      <tag>未授权漏洞</tag>
+      
+      <tag>CNVD</tag>
+      
+      <tag>XunRuiCMS</tag>
+      
+      <tag>变量覆盖</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Moodle_3.11_前台RCE_CVE-2021-36394</title>
     <link href="/2021/10/21/Moodle-3-11-%E5%89%8D%E5%8F%B0RCE-CVE-2021-36394/"/>
     <url>/2021/10/21/Moodle-3-11-%E5%89%8D%E5%8F%B0RCE-CVE-2021-36394/</url>
