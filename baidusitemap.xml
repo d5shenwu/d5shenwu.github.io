@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://n0puple.github.io//2022/02/15/WordPress-5-8-2-%E6%A0%B8%E5%BF%83SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E-CVE-2022-21661/</loc>
-    <lastmod>2022-10-31</lastmod>
+    <loc>https://n0puple.github.io//2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/</loc>
+    <lastmod>2022-11-04</lastmod>
   </url>
   <url>
-    <loc>https://n0puple.github.io//2022/02/16/WordPress-5-8-2-%E5%AF%B9%E8%B1%A1%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E-CVE-2022-21663/</loc>
-    <lastmod>2022-10-28</lastmod>
+    <loc>https://n0puple.github.io//2022/09/23/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8A%EF%BC%89/</loc>
+    <lastmod>2022-11-04</lastmod>
   </url>
   <url>
     <loc>https://n0puple.github.io//2021/10/21/Moodle-3-11-%E5%89%8D%E5%8F%B0RCE-CVE-2021-36394/</loc>
-    <lastmod>2022-10-27</lastmod>
+    <lastmod>2022-11-04</lastmod>
+  </url>
+  <url>
+    <loc>https://n0puple.github.io//2022/02/15/WordPress-5-8-2-%E6%A0%B8%E5%BF%83SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E-CVE-2022-21661/</loc>
+    <lastmod>2022-11-04</lastmod>
+  </url>
+  <url>
+    <loc>https://n0puple.github.io//2022/02/16/WordPress-5-8-2-%E5%AF%B9%E8%B1%A1%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E-CVE-2022-21663/</loc>
+    <lastmod>2022-11-04</lastmod>
   </url>
 </urlset> 

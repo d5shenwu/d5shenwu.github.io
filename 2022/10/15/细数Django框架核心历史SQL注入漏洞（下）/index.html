@@ -1,0 +1,850 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/myavatar.png">
+  <link rel="icon" href="/img/myavatar.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="N0puple">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="本文首发于奇安信攻防社区：https:&#x2F;&#x2F;forum.butian.net&#x2F;share&#x2F;1962 本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。 0x00 前言最近总结了一下 Django 框架曾经出现的 SQL 注入漏洞，总共有七个 CVE ，分别都简单分析复现并写了文章，总体来说会觉得比较有意思，在这里分享一下。本篇文章是下篇">
+<meta property="og:type" content="article">
+<meta property="og:title" content="细数Django框架核心历史SQL注入漏洞（下）">
+<meta property="og:url" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/index.html">
+<meta property="og:site_name" content="N0puple&#39;s Blog">
+<meta property="og:description" content="本文首发于奇安信攻防社区：https:&#x2F;&#x2F;forum.butian.net&#x2F;share&#x2F;1962 本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。 0x00 前言最近总结了一下 Django 框架曾经出现的 SQL 注入漏洞，总共有七个 CVE ，分别都简单分析复现并写了文章，总体来说会觉得比较有意思，在这里分享一下。本篇文章是下篇">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923100805.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923101337.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923101814.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923102244.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923103209.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923105043.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923150326.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923150512.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923150735.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923151019.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923151815.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923163054.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923164046.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923164231.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923164335.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923164652.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923202021.png">
+<meta property="article:published_time" content="2022-10-15T14:24:53.000Z">
+<meta property="article:modified_time" content="2022-11-04T14:33:27.560Z">
+<meta property="article:author" content="N0puple">
+<meta property="article:tag" content="漏洞复现">
+<meta property="article:tag" content="SQL注入漏洞">
+<meta property="article:tag" content="CVE">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Django">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://n0puple.github.io/2022/10/15/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8B%EF%BC%89/20220923100805.png">
+  
+  
+  
+  <title>细数Django框架核心历史SQL注入漏洞（下） - N0puple&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"n0puple.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":"NDNgppjVEEzr7sUejJFVueds-gzGzoHsz","app_key":"E6rBuy0l5xXiIjq6GA24XI5J","server_url":"https://ndngppjv.lc-cn-n1-shared.com","path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+
+
+  
+<meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="N0puple's Blog" type="application/atom+xml">
+</head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 40vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>N0puple&#39;s Blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/">
+                <i class="iconfont icon-link-fill"></i>
+                友链
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="细数Django框架核心历史SQL注入漏洞（下）"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-10-15 22:24" pubdate>
+          2022年10月15日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          27 分钟
+        
+      </span>
+    
+
+    
+    
+      
+        <span id="leancloud-page-views-container" class="post-meta" style="display: none">
+          <i class="iconfont icon-eye" aria-hidden="true"></i>
+          <span id="leancloud-page-views"></span> 次
+        </span>
+        
+      
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">细数Django框架核心历史SQL注入漏洞（下）</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>本文首发于奇安信攻防社区：<a target="_blank" rel="noopener" href="https://forum.butian.net/share/1962">https://forum.butian.net/share/1962</a></p>
+<p>本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。</p>
+<h2 id="0x00-前言"><a href="#0x00-前言" class="headerlink" title="0x00 前言"></a>0x00 前言</h2><p>最近总结了一下 <code>Django</code> 框架曾经出现的 <code>SQL</code> 注入漏洞，总共有七个 <code>CVE</code> ，分别都简单分析复现并写了文章，总体来说会觉得比较有意思，在这里分享一下。本篇文章是下篇。上篇请查看：<a target="_blank" rel="noopener" href="https://forum.butian.net/share/1923">细数Django框架核心历史SQL注入漏洞（上）</a></p>
+<h2 id="0x01-目录"><a href="#0x01-目录" class="headerlink" title="0x01 目录"></a>0x01 目录</h2><p>本篇文章分享三个 <code>CVE</code> ，其他四个 <code>CVE</code> 在上篇文章展现。</p>
+<ul>
+<li>CVE-2022-28346</li>
+<li>CVE-2022-28347</li>
+<li>CVE-2022-34265</li>
+</ul>
+<h2 id="0x02-CVE-2022-28346"><a href="#0x02-CVE-2022-28346" class="headerlink" title="0x02 CVE-2022-28346"></a>0x02 CVE-2022-28346</h2><h3 id="漏洞描述"><a href="#漏洞描述" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p><code>Django</code> 在2022年发布的安全更新，修复了在 <code>QuerySet</code> 的 <code>annotate()</code>， <code>aggregate()</code>， <code>extra() </code>  等函数中存在的 <code>SQL</code> 注入漏洞。</p>
+<h3 id="漏洞影响"><a href="#漏洞影响" class="headerlink" title="漏洞影响"></a>漏洞影响</h3><ul>
+<li>Django 2.2.x &lt; 2.2.28</li>
+<li>Django 3.2.x &lt; 3.2.13</li>
+<li>Django 4.0.x &lt; 4.0.4</li>
+</ul>
+<p>需要使用了 <code>annotate</code>  或者 <code>aggregate</code> 或 <code>extra</code> 方法</p>
+<h3 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h3><p>我们可以直接来到 <code>github</code> 修复记录</p>
+<p><img src="20220923100805.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>这里给 <code>add_annotation</code> 和 <code>add_extra</code> 两个函数中的参数添加了正则过滤，接下来我们就是要找到哪里使用到了这两个函数</p>
+<p>这里其实可以通过测试用例来进行判断，我们可以看到修复记录中也存在测试用例的修复有点多，这里只选取一个进行分析</p>
+<p><img src="20220923101337.png" srcset="/img/loading.gif" lazyload alt="2"></p>
+<p>这里使用到了如下语句</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs stylus">Author<span class="hljs-selector-class">.objects</span><span class="hljs-selector-class">.aggregate</span>(**&#123;crafted_alias: <span class="hljs-built_in">Avg</span>(<span class="hljs-string">&quot;age&quot;</span>)&#125;)<br></code></pre></td></tr></table></figure>
+
+<p><code>crafted_alias</code> 是用来测试的 <code>payload</code> ，我们先找到 <code>aggregate</code> 的实现位置</p>
+<p>最终可以找到这里 <code>django\db\models\query.py</code></p>
+<p><img src="20220923101814.png" srcset="/img/loading.gif" lazyload alt="3"></p>
+<p>传进来的 <code>args</code> 与 <code>kwargs</code>会经过 <code>_validate_values_are_expressions</code> 处理，但没有进行过滤</p>
+<p>之后进过 <code>add_annotation</code> 进行赋值，如下</p>
+<p><img src="20220923102244.png" srcset="/img/loading.gif" lazyload alt="4"></p>
+<p>这里就是修复 <code>sql</code> 注入的位置，对 <code>alias</code> 进行了过滤，而目前这里没有进行过滤，直接成为了 <code>self.annotations</code> 的键，之后跟进会发现这个<code>self.annotations</code> 在 <code>resolve_ref</code> 函数中被取出来</p>
+<p><img src="20220923103209.png" srcset="/img/loading.gif" lazyload alt="5"></p>
+<p>这里会将我们之前的 <code>alias</code> 的值最终放到 <code>transform</code> 中，直接被使用</p>
+<p>其他的漏洞函数与这个类似，就不分析了。</p>
+<h3 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h3><p>复现环境参考之前的 <code>CVE-2020-7471</code> ，只需要更改 <code>views.py</code></p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs pgsql"><span class="hljs-keyword">from</span> django.shortcuts <span class="hljs-keyword">import</span> render, HttpResponse<br><span class="hljs-keyword">from</span> .models <span class="hljs-keyword">import</span> Collection<br><span class="hljs-keyword">from</span> django.contrib.postgres.aggregates.general <span class="hljs-keyword">import</span> StringAgg<br><span class="hljs-keyword">from</span> django.db.models <span class="hljs-keyword">import</span> Count<br><br># <span class="hljs-keyword">Create</span> your views here.<br><br>def vuln(request):<br>    query = request.<span class="hljs-keyword">GET</span>.<span class="hljs-keyword">get</span>(<span class="hljs-string">&#x27;q&#x27;</span>)<br>    qs = Collection.objects.annotate(**&#123;query:Count(&quot;name&quot;)&#125;)<br>    <span class="hljs-keyword">return</span> HttpResponse(qs)<br><br></code></pre></td></tr></table></figure>
+
+<p><code>payload</code> 如下</p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs awk">http:<span class="hljs-regexp">//</span><span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>:<span class="hljs-number">8000</span><span class="hljs-regexp">/vuln/</span>?q=aaaaa%<span class="hljs-number">22</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="20220923105043.png" srcset="/img/loading.gif" lazyload alt="6"></p>
+<h2 id="0x03-CVE-2022-28347"><a href="#0x03-CVE-2022-28347" class="headerlink" title="0x03 CVE-2022-28347"></a>0x03 CVE-2022-28347</h2><h3 id="漏洞描述-1"><a href="#漏洞描述-1" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p><code>Django</code> 在2022年发布的安全更新，修复了在 <code>QuerySet</code> 的 <code>explain()</code>函数中存在的 <code>SQL</code> 注入漏洞。</p>
+<h3 id="漏洞影响-1"><a href="#漏洞影响-1" class="headerlink" title="漏洞影响"></a>漏洞影响</h3><ul>
+<li>Django 2.2.x &lt; 2.2.28</li>
+<li>Django 3.2.x &lt; 3.2.13</li>
+<li>Django 4.0.x &lt; 4.0.4</li>
+</ul>
+<p>需要使用了 <code>explain</code>  方法，并且参数可控</p>
+<h3 id="漏洞分析-1"><a href="#漏洞分析-1" class="headerlink" title="漏洞分析"></a>漏洞分析</h3><p>我们可以直接来到 <code>github</code> 修复记录</p>
+<p><img src="20220923150326.png" srcset="/img/loading.gif" lazyload alt="7"></p>
+<p>这里首先做的就是对 <code>options</code> 的内容进行过滤，如果包含敏感的字符，那么就报错，仅仅这些还没够，还做了如下更改</p>
+<p><img src="20220923150512.png" srcset="/img/loading.gif" lazyload alt="8"></p>
+<p>这里做了一个白名单，只有在这个白名单中的字符串才可以被使用，不会直接将所有的都拼接进去</p>
+<p>有了修复的记录，我们就很容易定位到出现问题的地方，这里 <code>django\db\models\sql\compiler.py</code>  是将代码变成 <code>sql</code> 语句，在这里有一句关于 <code>explain</code> 的处理</p>
+<p><img src="20220923150735.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p><code>result</code> 是一个数组，里面的字符串最后都会拼接到一起，这里调用 <code>explain_query_prefix</code> 进行处理 <code>self.query.explain_options</code> 的内容，我们这里使用 <code>postgres</code> 数据库，并且 <code>postgres</code> 对这个函数存在重写，因此这里也直接看该数据库相关的处理</p>
+<p><code>django\db\backends\postgresql\operations.py</code></p>
+<p> <img src="20220923151019.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>经过父类的处理后，在下面，会将<code>options</code> 中的每一个取出来，键直接为键，值存在就为 <code>true</code> ，因此值无法被更改，但是键会直接写入，最后拼接到 <code>prefix</code> 上去，因此这里的键存在注入。</p>
+<h3 id="漏洞复现-1"><a href="#漏洞复现-1" class="headerlink" title="漏洞复现"></a>漏洞复现</h3><p>复现环境参考之前的 <code>CVE-2022-28346</code> ，只需要更改 <code>views.py</code></p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs pgsql"><span class="hljs-keyword">from</span> django.shortcuts <span class="hljs-keyword">import</span> render, HttpResponse<br><span class="hljs-keyword">from</span> .models <span class="hljs-keyword">import</span> Collection<br><span class="hljs-keyword">from</span> django.contrib.postgres.aggregates.general <span class="hljs-keyword">import</span> StringAgg<br><span class="hljs-keyword">from</span> django.db.models <span class="hljs-keyword">import</span> Count<br><br><span class="hljs-keyword">import</span> <span class="hljs-type">json</span><br># <span class="hljs-keyword">Create</span> your views here.<br><br>def vuln(request):<br>    query = request.<span class="hljs-keyword">GET</span>.<span class="hljs-keyword">get</span>(<span class="hljs-string">&#x27;q&#x27;</span>)<br>    query = <span class="hljs-type">json</span>.loads(query)<br>    qs = Collection.objects.<span class="hljs-keyword">filter</span>(<span class="hljs-type">name</span>=&quot;tom&quot;).<span class="hljs-keyword">explain</span>(**query)<br>    <span class="hljs-keyword">return</span> HttpResponse(qs)<br><br></code></pre></td></tr></table></figure>
+
+<p><code>payload</code> 如下</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">http</span>://<span class="hljs-number">127.0.0.1:8000</span>/vuln/?q=&#123;%<span class="hljs-number">22</span>ANALYZE%<span class="hljs-number">20</span>true)%<span class="hljs-number">22</span>:%<span class="hljs-number">22</span>aaa%<span class="hljs-number">22</span>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><img src="20220923151815.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<h2 id="0x04-CVE-2022-34265"><a href="#0x04-CVE-2022-34265" class="headerlink" title="0x04 CVE-2022-34265"></a>0x04 CVE-2022-34265</h2><h3 id="漏洞描述-2"><a href="#漏洞描述-2" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p><code>Django</code> 在2022年发布的安全更新，修复了在 <code>Trunc()</code> 和 <code>Extract()</code> 函数中存在的 <code>SQL</code> 注入漏洞。</p>
+<h3 id="漏洞影响-2"><a href="#漏洞影响-2" class="headerlink" title="漏洞影响"></a>漏洞影响</h3><ul>
+<li>Django 3.2.x &lt; 3.2.14</li>
+<li>Django 4.0.x &lt; 4.0.6</li>
+</ul>
+<p>需要使用了 <code>Trunc()</code> 或 <code>Extract()</code>  方法，并且参数可控</p>
+<h3 id="漏洞分析-2"><a href="#漏洞分析-2" class="headerlink" title="漏洞分析"></a>漏洞分析</h3><p>我们可以直接来到 <code>github</code> 修复记录</p>
+<p><img src="20220923163054.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>在这里是直接给 <code>Extract</code> 类或者 <code>Trunc</code> 类的 <code>as_sql</code> 方法添加了一层正则过滤。</p>
+<p>这里我们以 <code>Extract</code> 为例，可以多关注被过滤的那个参数，也就是 <code>self.lookup_name</code> </p>
+<p><img src="20220923164046.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>这里我们可以进入多个分支，但之后得处理实际上都差不多，我们先进入 <code>datetime_extract_sql</code> </p>
+<p><img src="20220923164231.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>这里还是进入了和上面一样的 <code>date_extract_sql</code> 函数，而且没有经历其他的处理</p>
+<p><img src="20220923164335.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>看到 <code>lookup_type</code> ，就是我们之前传入的被过滤的参数，最后在 <code>else</code> 直接拼接了，直接造成 <code>sql</code> 注入。 </p>
+<p><code>trunc</code> 也是一样，不过进入的是 <code>datetime_trunc_sql</code>  或者 <code>time_trunc_sql</code> 等函数</p>
+<p><img src="20220923164652.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<h3 id="漏洞复现-2"><a href="#漏洞复现-2" class="headerlink" title="漏洞复现"></a>漏洞复现</h3><p>漏洞复现可以参照修复记录中的 <code>test</code> ，这里直接使用 <code>vulhub</code> 的环境，可以直接在下面获取</p>
+<p><code>payload</code></p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">http</span>://<span class="hljs-number">127.0.0.1:8000</span>/?date=aaa%<span class="hljs-number">27</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="20220923202021.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Python%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" class="category-chain-item">Python漏洞复现</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/">#漏洞复现</a>
+      
+        <a href="/tags/SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/">#SQL注入漏洞</a>
+      
+        <a href="/tags/CVE/">#CVE</a>
+      
+        <a href="/tags/Python/">#Python</a>
+      
+        <a href="/tags/Django/">#Django</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>细数Django框架核心历史SQL注入漏洞（下）</div>
+      <div>https://n0puple.github.io/2022/10/15/细数Django框架核心历史SQL注入漏洞（下）/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>N0puple</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年10月15日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/09/23/%E7%BB%86%E6%95%B0Django%E6%A1%86%E6%9E%B6%E6%A0%B8%E5%BF%83%E5%8E%86%E5%8F%B2SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%EF%BC%88%E4%B8%8A%EF%BC%89/" title="细数Django框架核心历史SQL注入漏洞（上）">
+                        <span class="hidden-mobile">细数Django框架核心历史SQL注入漏洞（上）</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  <article id="comments" lazyload>
+    
+  <div id="valine"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#valine', function() {
+      Fluid.utils.createScript('https://lib.baomitu.com/valine/1.5.1/Valine.min.js', function() {
+        var options = Object.assign(
+          {"appId":"NDNgppjVEEzr7sUejJFVueds-gzGzoHsz","appKey":"E6rBuy0l5xXiIjq6GA24XI5J","path":"window.location.pathname","placeholder":"ヾﾉ≧∀≦)o来发表评论啊~","avatar":"retro","meta":["nick","mail"],"requiredFields":["nick"],"pageSize":10,"lang":"zh-CN","highlight":false,"recordIP":false,"serverURLs":"","emojiCDN":null,"emojiMaps":null,"enableQQ":false},
+          {
+            el: "#valine",
+            path: window.location.pathname
+          }
+        )
+        new Valine(options);
+        Fluid.utils.waitElementVisible('#valine .vcontent', () => {
+          var imgSelector = '#valine .vcontent img:not(.vemoji)';
+          Fluid.plugins.imageCaption(imgSelector);
+          Fluid.plugins.fancyBox(imgSelector);
+        })
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+  </article>
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+    <div class="statistics">
+  
+  
+
+  
+    
+      <span id="leancloud-site-pv-container" style="display: none">
+        总访问量 
+        <span id="leancloud-site-pv"></span>
+         次
+      </span>
+    
+    
+      <span id="leancloud-site-uv-container" style="display: none">
+        总访客数 
+        <span id="leancloud-site-uv"></span>
+         人
+      </span>
+    
+    
+
+  
+</div>
+
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script defer src="/js/leancloud.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
