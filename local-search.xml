@@ -86,13 +86,13 @@
       
       <tag>PHP</tag>
       
-      <tag>CVE</tag>
+      <tag>Cacti</tag>
       
       <tag>未授权漏洞</tag>
       
       <tag>RCE</tag>
       
-      <tag>Cacti</tag>
+      <tag>CVE</tag>
       
     </tags>
     
@@ -150,11 +150,11 @@
       
       <tag>PHP</tag>
       
+      <tag>CVE</tag>
+      
       <tag>Piwigo</tag>
       
       <tag>SQL注入漏洞</tag>
-      
-      <tag>CVE</tag>
       
     </tags>
     
@@ -179,11 +179,11 @@
     
     <tags>
       
-      <tag>SQL注入漏洞</tag>
-      
       <tag>CVE</tag>
       
       <tag>漏洞复现</tag>
+      
+      <tag>SQL注入漏洞</tag>
       
       <tag>Python</tag>
       
@@ -214,13 +214,13 @@
       
       <tag>PHP</tag>
       
-      <tag>CVE</tag>
-      
-      <tag>DedeCMS</tag>
-      
       <tag>未授权漏洞</tag>
       
       <tag>RCE</tag>
+      
+      <tag>CVE</tag>
+      
+      <tag>DedeCMS</tag>
       
       <tag>CNVD</tag>
       
@@ -247,11 +247,11 @@
     
     <tags>
       
-      <tag>SQL注入漏洞</tag>
-      
       <tag>CVE</tag>
       
       <tag>漏洞复现</tag>
+      
+      <tag>SQL注入漏洞</tag>
       
       <tag>Python</tag>
       
@@ -315,11 +315,11 @@
       
       <tag>PHP</tag>
       
-      <tag>SQL注入漏洞</tag>
-      
       <tag>CVE</tag>
       
       <tag>漏洞复现</tag>
+      
+      <tag>SQL注入漏洞</tag>
       
       <tag>WordPress</tag>
       
@@ -348,11 +348,11 @@
       
       <tag>PHP</tag>
       
-      <tag>漏洞复现</tag>
-      
       <tag>未授权漏洞</tag>
       
       <tag>RCE</tag>
+      
+      <tag>漏洞复现</tag>
       
       <tag>CNVD</tag>
       
@@ -385,11 +385,11 @@
       
       <tag>PHP</tag>
       
+      <tag>RCE</tag>
+      
       <tag>CVE</tag>
       
       <tag>漏洞复现</tag>
-      
-      <tag>RCE</tag>
       
       <tag>Moodle</tag>
       
