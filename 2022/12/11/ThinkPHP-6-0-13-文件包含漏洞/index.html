@@ -18,25 +18,40 @@
   <meta name="author" content="N0puple">
   <meta name="keywords" content="">
   
-    <meta name="description" content="文章已加密, 请输入密码">
+    <meta name="description" content="本文首发于奇安信攻防社区：https:&#x2F;&#x2F;forum.butian.net&#x2F;share&#x2F;2059 本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。 0x00 漏洞简介2022年12月出的漏洞，影响很大但目前没有 CVE 编号，起源是某大佬在跳跳糖发的一篇文章，ThinkPHP 在开启多语言的情况下，存在文件包含漏洞，配合 pearc">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ThinkPHP_6.0.13_文件包含漏洞（密码保护）">
+<meta property="og:title" content="ThinkPHP_6.0.13_文件包含漏洞">
 <meta property="og:url" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/index.html">
 <meta property="og:site_name" content="N0puple&#39;s Blog">
-<meta property="og:description" content="文章已加密, 请输入密码">
+<meta property="og:description" content="本文首发于奇安信攻防社区：https:&#x2F;&#x2F;forum.butian.net&#x2F;share&#x2F;2059 本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。 0x00 漏洞简介2022年12月出的漏洞，影响很大但目前没有 CVE 编号，起源是某大佬在跳跳糖发的一篇文章，ThinkPHP 在开启多语言的情况下，存在文件包含漏洞，配合 pearc">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211205635382.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211211137582.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211213441255.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211213528442.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211213941091.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211215023454.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211215349963.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211215302978.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211215700865.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211230716565.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221212001719765.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221212141847902.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221212142110044.png">
+<meta property="og:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221212142317211.png">
 <meta property="article:published_time" content="2022-12-10T16:15:44.000Z">
-<meta property="article:modified_time" content="2022-12-26T12:34:15.995Z">
+<meta property="article:modified_time" content="2023-03-15T15:03:46.474Z">
 <meta property="article:author" content="N0puple">
 <meta property="article:tag" content="PHP">
 <meta property="article:tag" content="ThinkPHP">
 <meta property="article:tag" content="getshell">
 <meta property="article:tag" content="文件包含漏洞">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211205635382.png">
   
   
   
-  <title>ThinkPHP_6.0.13_文件包含漏洞（密码保护） - N0puple&#39;s Blog</title>
+  <title>ThinkPHP_6.0.13_文件包含漏洞 - N0puple&#39;s Blog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -231,7 +246,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="ThinkPHP_6.0.13_文件包含漏洞（密码保护）"></span>
+            <span id="subtitle" data-typed-text="ThinkPHP_6.0.13_文件包含漏洞"></span>
           
         </div>
 
@@ -254,7 +269,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          23k 字
+          3k 字
         
       </span>
     
@@ -265,7 +280,7 @@
         
         
         
-          188 分钟
+          26 分钟
         
       </span>
     
@@ -311,25 +326,84 @@
         <div id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">ThinkPHP_6.0.13_文件包含漏洞（密码保护）</h1>
+            <h1 style="display: none">ThinkPHP_6.0.13_文件包含漏洞</h1>
             
             
-              
-              <div class="hbe hbe-container" id="hexo-blog-encrypt" data-wpm="密码错误" data-whm="hash错误">
-  <script id="hbeData" type="hbeData" data-hmacdigest="08d10de9f0a7bcea7b5dc2efdfb39e719a26fa8f40571b42abefb3bfb4f5feba">97cddd587d88b0c01384010daba7d06b8cbadbe9062ad0724ba7afc3b210a95b1d590f6f7169939c6fd9d56f2ef8c1459ca2ef8f5704165d95cd7f560fed021c2b21842562052c7c5b5847741c63e3683b0210d69ffb06cc43ea3481db1c88cd4e02fbee70602ed15be5ea875a7bc1508d34ff5046ac1bbd18b25baf5db28fb1927528cadbffc18a796f927151bc8394e9a6385644c4bfda3c73b51566521f482aa98b10e3bad13c730ceff36560c84354cba3e51e225cd4f2da095a075135e6ad018dbe58908267ef8e61c55282eb9ed1e6764ba89fa4d359a9a6856a83840b813da9682ffd294430e59f6ea6d9b3711b8ce9b021a3f004e55d22630ea8b98bade862a6cefb2cd38f44b1f60c918c992e726976a7ccab60edf789eb46377238be020018e72c4817e98fc18a1a9b1e1d3f4b28fd5c583db46a361aa686397590e4cc5d8a585e4b7b12bfa97f909c78c1b317e5e0a516d85a8812010cc7dc95ca8083d6fe758f608ed2331417bfbc5b2153cb5d364c1418708cb569445a7d275495c4c6c558c8fac93dce860377788f8660a033cf12a82f5eb9e302c0d964a4bf96a3cdf2c64f5f22fbf9ee6588845a40b87cedd178549ab03521287a4fadfffb48e92f44a0f5f486db69065696714bc25baaeb715ed9ecc420e0199c5d526f0e0d8c81b538c28ffd661335a0dd53606ee4500586353c9c5f81fa9fdbd6e49739b434e778096e6c15841a6e37a76990b0f190a0b3428e061f64a7cd880537a4cbaa641971b8ffbaaa0f9475c5579f5b512720bba4b055417620abc1302c1da14f0dd6509ee99ac4d2da26df4f3e430f16f0e6af36175206626e35da03f0f948be1ac30c89a6ae8e83b6c63e530e968e1bd49acdbe4eafe0b3d986cd4a68e528a8fb611e34630ffddbeec7f0ae1e99e1e5ece009cd27a8eba66105c3ce1f405e7e0d2f9981394ab79329e57a5e9f84a7da2dff2b05d404740aa84d37dc5773c3903a22ae8f705e57c646ac66299e9da249dbd8cdcabbdbad98c61cefda53e5dc447c96ebabe03d8ae6240cf19d402a0ead2d16c4f6c9cd692124701e57fcf8d523b86086a092e67e8b6c431bdaee4bc6f517d6e332defc65c40dbdfbecd8f999f1ebe21778cf757241383e5cc1e2222612a8f87ca1f91b452057aef9b04c9c84dc0f6738cd83e8a22ab6e58fd2ed67e47860c398e6ea121ab98d12b4409b8e2cbb38a8f72d027b15b627e0cbed2845042fabdb404fc3c112f1e394c0082e5792c93dab7731f94fde49798743f5970cebc3fa73c5e80b6722bf6a3c79af58d2c490810e38302f6fde61b56544d966c61849071e6cbc7f912af1cb08ca42c357dc1735690fa90ebcfe4ad576e75b5838575a34937a14c433c97caedbaa14308702746d8f81db03501748c3b39249951e752cbc96ff0e1bf1578ad28a925b0dee3ea867b47058bb4b686a6e65ec0dfdd4a40da57e02d86eaf5769234acee1e9b886edb89d54f65c65613f9e7ec097c5f9f4c0f7f670c53dc983e6807bcf6b69db2da4320bb4b944aebed5e30454323a476cb58ffbef72780f3856aa0e17ddc99bc0c441cf316dbfdeeeb67c3c04c484c61bed13bb574a6157f5b0f4fc6a12add4639c7135b20b6c6347a4c5eb4d46262e40d75a6a64471c9b8b77ee66af67821be340042ffa172111ea46ec20bda5d6db71dc0bcf80511bb477804d5dee3ba2c4927808b10cd3f623312fb8cded31021d11236ae75832d7beb5a259a0ee305b52a116ea5728e8f6aedbdb5839813fc7232f3c2ea0227d1b7731708e1ecaa55b4111e951308fae328b0ec7668592bf8145e574351db0b3a2c9ecc743c14e8550a01b53e2e8d807b4f7481042615946248d7d6050de73da389428e0956c8398b44f33ccc8ce4fa98db2e0b0e759f2e8d5581a3742ffa254959beeecb820ff409f4541403407fda59a79aef78fb3dd564876bf6bdfc273d34d1110099f263d645fd6a1a9a5df119ee5edc591025fccff850440954e459f79808786b345045fd47dc999f6d6a276c6c868dd4a658d2fd092cc4a2557cc6a4c1aa47af9f0aa047587457e9de527ee37b65881d3ef8592602505f22d83e5317cf606ef170d5886f6132f96a03961f72b4f83ac70838a1005b5e48047a6844b4a3e7ed6eb4c9ae91945db546e9d5b4fb3e6854ca53d7d7cb7a3f3877c70252eeaeecc5028f3f988c57c0b6366ddccafe08f4097340c75d9a00e37445a6a59ace42e07c1ee8c3e28d195c86cefcd0f4175140872104cca5688380b98051c8463b413dc63221285e9c6d466e269f77a50dcfabe1d0e400abe4e53c9b245845a66043510120abeb10b05c3f8bf8aae331560437b02aeb7c6c00d1d1b924b26e4c19b89a7ac138b5bc7d03285c60ef00648162343f7d6c83c37ae40eb135215743947c2b9e90234663e32f10488f0354b2e61f47c9a32368aec0578a0e2b971a4f75b92ef2191ae194afbcdee5966c3a37b713a7652d1d0401e7973eb0dff509c436e0b5208a9db49032f3642dea68fc439e9cbc575a40efec11978341b23df30429f77b454fe479df093b13c5305de942bdf6f8587f3f967ed09392eb8776ebac9fc0b5bc18d77b6bf1182d7439c7b2c3c815f4f31598e5f3f5c5874c4fcf3bfa1b8f5aa7de595665b01ca271bf7a687acaff2f1f2cb9bf6b4893882b0bf203326e9ff6955d8e54135dfbb285e726209a398ddb652371b55439cfc16a09afaa9b02dacd05f96288c055055567e8a44dfc66728419255db4ca24cfcb38ef69f5142841b233977de6628606b246c0991f21b82127ea1e2ab03d8d08482e4d325af28356da01dd880ea1da7ac98cb8955af351621ae838c6a8b74d2f7a6ff7ac1b914acdd5f5d1c353bc57386e7c78bd8455c54be464dad372418d31e635f350e101fd61dde85b280f3a27a56c0590226940e08ddde61f920b9a28442afad5e5dea9f45e4aa3b5c15ddb311ed437c1bbf0d8e6bbe34f24384cd13cdff97952cbf7199701e804dcd92f87f257c9e5962db82c1fe2d88f4ee7e2a0c734999cdea933b12e863c450b102a96c8b8e9f59ed319f7e100a17a2df906f40a8e3eeb54da36342d20f048adc73362d1e0cf2edbf592b2c8f311275b57b506e252a4ff562289468df3b5f1cdc4469f9b2b0fcddcd368b47b77eb6027a51766faf0e393d38bc939879425bbbc5e741c1a95b081adb9c4029e0a31f8aa53cb1907926b63b85d67eee9f520c79bb7087f7a88dcd212e0bf6e74d9ee6e827609508512886cfd698359bdedb7d1d53a5575919d2076fbcb40ee0863db9da1804be19e58467f34e407517200a66cd93c540bee8294e5f400f069c6b4e6a3f0154b9f78139be0d7b298f36e68a84ac7fb8fb2ca71fb89ff319b713bd60923fef762a25f024ac32d41770ff94f6c0a2b49535ea0a1e0bb348aaa469b6a29ac49ed39aa2d6a2029de181914cfa9ae820c083faae35de06a10823b52a3b2257037c57710a3d16ceb1cdb4816f594f938af75d8d90b18eaa97c6d85214e313dd20b27c94cf33e594aff757f058de9b3f1d74f3fcc87810d0339882a33c18ba03a02e353799770552613908396549a570e118c0813205f7a557653e167b9ce6b297f73ba5187b52a242e3e35d393e3f1d9e1b55816552d420921d6b18a93b25d86b59e96114e65122a71f49c1fddf87cc39abcfe89889f7b0668bafb8e3af4b333760d72abe05fd9022782d3ca912a3d40f6e322b2cd716fff24db4cb575cebce9c087d6d60b50331dbe5b6357f101de576f7f1ad40cb8c6a406e377cf43dc41510b0b3de9ce49e8514ced2e2e4bd47285ceae1c97b495feda0ae3e598bc8c32c40b091bfa7142b5a375acdc635d773ecf383eed2c8b1fb1cd04bae3f73a03131ea82f48eabb1b10e6b3651818274c7fb467904ba994622b689a26c58f2d67902869b952e20323b4dbadbb169281a98065097964ac067c0b5da2230ca5a5bbc264a1e29e6d2ae81d1796dc05645f93241977e837c21830ed82cb5aa54cea47b26b4164dfe6dca393feaae42f6009e7aa1f79c77132271365386efe3e72800e3288e033f6a6dc02581fff1f7506dc798d35630b6d8bcf9e61b222337c2e3f360298a9bfac497fefe53f3755be33ad381c9fe62b2ee2c36e5613a2bcf651df89ad486b81ee778a18ebb7bec4c04540d68d484b0a5499db8dcb3c26cc23daf20d085c06cb98788f0a34484d920a14503f56e07a313322b14b40721061e99382708596a0ea02952758056daef66a47baf92c2bbb2edd0aa7870fa43f6ad06b6e83bbef4316d46543a61ba366a611ead50e8c7a5dd3619adef2daa6b72320d8d13075c0ef6dc4219f79a4b224489f901c24f7de54c91daf505b6afb91e8e341415af8aa85ef36b1368ec2d03c938f172b9ba33e410219e163997b6cd79cadd207394b69e104f5371c9fc8f8f8ba24a3c7060910446533d6bfd967a12504af4e79efcd9c8d97ccc9f008fea8845240e0ec12323df3ea74e01d0f87651e47b4b01ccc827766e5be11490f3906499c89d40c7e849b22b7b9d2136865167e9dfd59513debf14bbf6f7805962048e7e4d931ddce72f2398818fd92634cd1d9497347395a97791b29d05a00867e1b06c5ff6f33827baec8103aa472b7f6ec1a920436a49f79ac340c36d1548e8f17de7f966af3059d5254ac0fa27146a304559b1b8b250b6859830305cafa6b80968238eea97e3b78ae33725bea238e7535b31b14dc2053234df698ef104c927e5ca08b35e849f4fd0a691d29bc138f00e0f51e2fb6cca49e87c5fd5e72b291af351659b43d51940305fa745be010414e6f8597362c1edfd221bc99ff50c40f02b165af3439790687874fc8f53e529a1ac5b951cc3a9aa5d4d54244109b92f81e2e04ad80c5479247a9d2dab6e1a93a37d1a9a301c2ff1822fd179330e28f36ce7c6efe463aaffc20ac7dcbb6cb5e018e843752e74dd784e7fadf8af4697e0dc0779b0cc84caee3b3fed41a7246f7119ce37bb0c955400e0be81618e470f8c847288ccb02247e11a9129d036ae35d2682fa62217bf421ad4379eb8a8e389d200b81357f0fd50fa80bf2f407f52b7ac39ca2a78af6ff0bf1735643c991b3bc3c4723c49a5ceda8573d705882d43e1f52046cc9c06b79f343f2ad2841a70546c6aa8664fc1679e4f4a95afd3d175ab63ac49ea7f11c7334c18bf0b353cbfb920c0f7e0a78edf4673e9698438239ba6f3dfbf1bf1895e7910799074e44d38ab75a310c98534e98469a6497b488ee66e6db71c8b27dc18f38c6548d70b04841617ab3f9bf90230a119b579939a5d807211b4a44fdef65eedfa635be4783cbd3880fb9022bf9299d6ed023fcf3a25251447c8d1856141958e834789098ecdc19abc58ee2935d36d38b87185427d1d186c162f5befc8613d122d9ea3bfd680b566065c04e79c88c270fc09cd0abab1c49a68a09f649e0f21157228355b3564a5bde5d0cf77543481ec8951d4657278d3fbbdcc8cd1ab7b119b53d002b37479dbb6bd7bc218a74c354f08d761ec261ccf4d109e05738914f617d0d302b5b57095e4805b039ad96fbf31dbf5fb519bf5ea21bc45a8a8842b34d5791904ec54a8145e1e24d2ec0a6bc7a0424e254c16a94c5cad2d0b90d77105b5b5c43a515c7786405b8b00f19c9c84ce7e3515cdf8049b0991b1eff07efc2d9b327d6840d34ee335c2403e582d5308b69b75c25b4474ac4f82dc3d0116b78d49fa0110b74dfbc48ee4f9385a33aa363da899944a314506b8f56c2d05dace58b2ea30953c32dc71912e0235ca8f35a2685778526cf2df5d0dd14024b1e11901a0be7d0b3c15825ee89fa70ba3a36766dfc326282b26f9c2b2a9f2bb6dc08caee5a53466aa63f89a2683678856799ba80429218d13d069b53495b034510b468a31a4b3b883dbe435c4685b058db8fa64273998448efadea068cb3f0370fca05e16396033bc6ad394061a93fc971a4d3821be94144a8b84c02f02124952227f713fe4788fb82f3d2d9e0770fb37d81707c0ac160a9003c87be603112431afe97e378cdf8d6006281714c5f4e471c6699cf696fc6200ed2fafa2306082e8c285565a672310520073dde8c0e6d3c18cf70bd303660d5ee2bbd18ff44b5b2b0445fc46962f03783b2f974afb0918edbda213e6fe6533e96bcab04edea921bd323aa67b58b09a988ca77b63c5f3bd8dceb5f5727fcaa5b6e52ed5d58dbbfa8e2d8abb6a9399f2c9d728b56bc9e0c9d68f854a8091fffd27e7e31a686e5772dffdfbcd72407d697af43881af3ed80f97774bf4102ed353d6f646efbee6fd08a09e993d7c4a16d94a91d2d310878674c75beac51934b163f7ec23ceca19158e8b67f8a3be3d96380f1d08e0c93c423f8e24827102fcaf959e994d5bfc54c356bc9685500242eeb8675c432efa80a74c098c720f7dc921d3531e3e16d3313344fc30b7f2fdd99313cbf4878d8ea50ec91bd4bb9f80ec5699636c14ac0b7136e5400382f26af628b9a7d42c3168e4aebfa33488d5342159667bd1374ba6a7aed1a2b4367a0ed439853c2f77ec923166b63bcd5a7b8b65968515f5b2715735668d9c228c796352006ae969e2d0c29c3d2239ef9687f476d05f208b6b3635328e1387431711155fa4aa3d1751a632bb55c9655d1d11a663b15186740978f63088a83f8cdd5502b6bce8c4722752871d9419f2a10ae4089a1cf701d7c072f24572c0bdf20a5c002fa875c61f8115cf8f978318f5838f33e2c3a5f4ae65d79c445a8b0a3e84f03d9000b725d4a3bf2df6ff3adba27c4ae2a66e1dc124549a9d5d2978e20f934a320d1f9c2f5ede5083aa8df311c2ac6dd67186e2976b119daa9c91ac2d628b1cc734422ff15c14146d02a81cbb0401a66692da0e04d57844217c6729113d96a74cddcbe2501e19906008537c056465c2504b586e9957f8217a2433de2b0158fcc295b95f9b0cd89afadb087aaeabc412635524e742bcac22414a863e698a1db3eb81fa61286a3025dc376ac3787fe301089df2627b1547b1524f3d9fe77d09035f29d5c7a06e2539635263fc55fbc009053e12720d4dcb28d4a1a193bf4d86c0a0f52b2e6dec75a406bd4b323b3f23ac5bd338573a8a3907181eee741a3b4de5d8af2f16572ad31a77d71a7b6c1af865a37bb0fc5e9dde8489b4fa0a1e47d7bcdf20733d00a0590984b4c87b454273ca51d7282163937ce8b697f8bf4af36936b1cebee73b803ae7e5402aef013c83379267b74aae3a1d828d686f8226299a1b12dce9ba0175bc78a4554967ab320ff11b35717733b1b9ebf424842d641995e23ea60c7b5597e0b64809a2947edbe603a7df688f6d8d179d149cb65512fbd4684424e429d3543a632cd8062635598f9bdb73cad1273b8130ed4823044ed951bcb8244743541149612c96f2ff4fe72dc606e1200795b809f9d9234490645587d80db02dd3bdb515768605aeccec354ae6deb68776f63f2ac7a4d90df49904b493a8e6c9cdc9ae8296df5570ba1566c6bb0df068c70e873cb8045b587482e566d77ae75e32bf57a86827553915f38d2743973e6a296ba817461cf3d01600cb7bd36ef7b82a2e165d020eee542a603abc435d53079bcdf5fe57a1d25d5d227d9f9eb2c2b205aca4c62adb666e55c18d2ed8b05cd6f67165685e5996bea65cf2a81d2787f6e25a96b8fb54e39e6f1316312fdd822256ea3515d2d4b4c82bcb7e1174ad017bfd0e355fc309b9e8a030ef41f741519d04c65bd13200962121b701e8f3655d64e0c91d471efa5cf7df0d7cabaeaec603ce3188b292e435713cebbc0f6ed7a8eb10880c8e8886c236c63c11be58cd7be427aa2afe5fd49e27e6c4a4df03bdc453dce96e64543285331ca8c92d380cccb35826389f5feaa91d362f5ba8ca7ea4fa6ecfb7acd837524c788c794382e0da570c4fa312f446f9f8e4adad027b4a2c0483c7ae333f39f78f5bd1672137007e73eee50c66c10fbc20f5b8f72ff4a9a34e32f6d033116c1338f29b05fa5e5c2a1c2c7ad0a0418b4d214267ba63d1a097caebc9f829caffadb410f3b12831e386fdf87fd27c96f251e384441c6b3bc5dddd7551475950daa216df084eb19da013457976cda296a53e2bacb29b381a29a6ba7d036ae405f56b98eb5cdebd28751452cb36d27b04f6f551cbd6a8c2c0516552257e136d7f7f18d2db38877df1135eddd1f14106c6fed92c000f4014cbd9a29075396bfc38d6fbafae0abd6f68987ac69cd849a221050ef9abde97135570d08eb6376cec3858a9d7e281bd63b036d45f249f0ed92bbac96a6c1bba051731de539258531209d0dfe4acecd98ebe707feebd6d84eef5e399fc0de4634f81bfe70c7b692ff7f65b25c057480a6d0ceeb7162779b1ced0a3416a5414375010dbdd534f994577e264bfecf0ea27090218a3eb63dfde52a0bcebc6db087ad3001e221f71caeda78076af7e6fae4bb42a61ebeefbea52dd518385a00f7c0b1f957f1d49a67fe15ef9e0a9563659dfa263de960e2d2d26bf541d6b07ec209a5f606076170cdf94b2894318c5a99ebc75ee4d496acbb2816fc01c6e9ca3ba253a1fea9148beec826d937d3276e642e23f75aab9c1168979860088bcdf1bc8a5f1567acf65eb654a7c89067329efee94075365c2baaa8e2135b0596952e45555dbb9ad43f34c857d0ff2d593c24cdfa22c50a83fdb5da9cb8d8e17a23632bcb17e964c317dd7981640ad11a4af596c4feb3b4f7af20c4291b8a1913312fbfb87a66c7ea825d088207efabba99aadb2f86641a33832210f85d70ef90a6adf818d5c8323acf53f5847037559f6e40d99e6b02770e656a757930732d0d0e35f36bc60fc7e560ee963e2b09402e64408b317707c43ca4f5c30d0385523877a205c667d038371233d0b23550d184a3224e9a4c3cb554a896678e0f3e694bb38b10de65bbfed94a708691f4e6b29c27c35773f233ae31cac823f89898305973f31e3ee67866868b3bbcd0591dbf91a83bf0b9658f5ac88a37b7fbf358015c859a9d1322f9426ba9b5bd9f1d155d678ec549aad0419a3d2b92a619ddb58273ad6d3037b6d1f726a8e9ef2e53d86ed70f68cc35b33a46bad625468842176e173dcd90e57f996ce344f3acce31e15f8044304e7fe3105eac1a616e50daca609ced616f01e15d4e23630a7de17919ec376b5e4ae6c3b090aa1a8492a6273f2cf0490c897bfff802fa24103861c56d66805abc06bdec15693fd1ac9908c46aa81ce9c5195923c3b3ded35b297dca96d5f763f9ddaf37482870040ec26651117ec9654f8845834a27abfb8582c0cf6dd777bfa8305a6f6c0d90086f2a7deabacdfd353958cfa86a98394afd736900d2efd3acfdc255abed5f1e5b02055760f158cbe9f635333d18c6a13a0435a2bc3e578d88c6f3b9af3859e1e9a7fe83fa9f8256f40f631d3708abf15eae9e0b53ff1c2c4ac6e26a1b0b255572fdd62dd6488316c34e76fb66bd842055531d358f30cdfe973b9badf30e02d02f15959a982f6d471e76f04c1cb80b4eeee3c0d1bac922e72ea3d12e26f3c79f5db2c7697a84812c05ef102970ed4436e98b3fd89b18743337a3f78de86be6d77271f68bd1d32ffa3bcb8e2d1661544db055e5ce9e5b14864877faa20f7f63c0becd62e524a063c4f6f34b1effd15e9f2ef4953c948228df1692599aa22b412be8911ccaedf907a19edb586db37f9942401f7341ba38abe28c42ace608e1999da89e5ae4552c5b6f8a0fc519a464b8b219a3bfb4edacaef5aea23fd0c5e2e1dfb3da8798e719715ad2156b6328621ed6a7c6be05ddf083301c404206562dc2b5f9e66bad2773f0de0d732f43acddb37251f2288972587e443b501f892dec8e7732091715c2f2b4237f6584e880765541787d1a130ea81b34df022da8f77d0eca54a54c63d3bb441913de0f73e23f0ff51e6042f3ffbd27c978c5204a1b311d2fd7483627eb58929d70f80eec18caefe7c16aceb17ef1edc273375c76a60c15a5d8b92913142dac4de9d1eac29ab367a287d149a1aba345fbe8ad0e3324ae52c160852d3c701e3303445ce6ddd517ccc4983ccf4c1af7982c9334214ccb818542c9e05839d0c1c3d87d52c770d075e5c5c26464ded1b1219f63be19f7488404dd071e3a737d7a08c4635f5d827fa1393aa5b9b1fd74e31c61c8f270c839dcff6d6c6e247e53cc57902bd79b75d705c3320fafff5044bd8ab01c43af01ff99b162395267864b01460b1152d3b1683f42f9de8690f82b9e1ee0c4d81e3284685aeb8792c0a0ebce4e4ffa20ef6da03f4e4dc18abe11bfde6c2d5dece6218d21599791af4e6555c636799f70549f054b4aa63b1607b2c576b8ec431c136a929911938cc47a9ff14b0f917889c89cff0468a8762cc94a991d98c65a0fd64074389dc5c4fa66d6b8525f26b0288cca34a456186bda01c837ea7ad5d52e971f98bf2b8b1f75672d6b65e1de990eeded6a67a447f8f3664d49eaab1eefbd22e8b8491e852479eceb7ef48d947401d3be606a1d4ffeb6ea7435458fb8f33a6703274bc44a5a3d2b4341b486b3f5b294c1eaf02a66bf847d6d2c082f8e35f9c811f7dfa11ba5a5c8ccb029e94ae8950d020b3287cc748b49272c642d4766d53a7b479a9b39360208370ee7bad1c602e07c407389b8cee828d0d16ec96dc5bcee6df89f1a793d5236c62dec8c09731a48b6b4fc2b20773fe7e1ff6e88d55223bf6844713ef59a76f702c36feec52a807bcdcfea20470526b3c91741d6252824eee62c13842b72f0c03f1bf74405fa19469574f4b503b18663a1375dee6e04b8970cb00e8ce36fc028d08a3df996fc281cd66641a90d5eb3b05eb85207e1f2c802ace3882d31cae85e94aad9d1c2ef6faa277c684a145c39cf912b87d94a410722f1a80505ba52a7b242be7deb2be0174438cf44952c56f410535882285b0eee77a349ae535108c1183116fdca35261a16aaf7a3ed787a92e2755ce57005446c31c9703e0d5189a35408a38763f8ecf44abea7347fa4a59c50992ef0680b130012fd1717f62b3f70cba4af6f39fb58a77bd72f68fb7223c43f2fab5fa8e93d733404a396d34ed9600565bed09ca97349b7958a80229da53241521a59109b31dfe404a6be76ef57bef8b2140d3ded7aaa7c5fd059f71dda61b0e78cddb18963e453e8d6b3e5290396e1248c99ce7fd0c52efab3d724d8a535b6de50ea93ec24a8cac9ee653aa8c4ce6efe4eae49a9aa5ba3643c6ff1db2a957c89f3e9c8b7027560c6654b83076729fd8608a7788f525ab82e73481ad957b32530befc8b92ef737048b2fbdd6f7c2d068a92f73471da628d0b248c3d857b3fcca715e3cb8c4f4c32c0d2aad2ac6aa03b85b42bbfe3b8835c8b4036f5cb5afc0015fd3ad60737dae20ef82ec47a24f64de5ce0eef97c025b69516f4bd53930ea506bf7b7e3e1c88eff458edd9ba220e7858e4f72f77544a3f187a95aa4d10902ca9d6c0f8ebac3686933d7cabb64a5ae20fe865dc2d4c27facc573845c291775cc77a365ad9f4fa9d2d9972f7cb46ae5fa443b1af67b658a3e22d5b160a25c6d4a512c0d4acd7a22f11423de22aa1fe1e291b6bd1a26ff5b2b0826a34c103676e225364a8cee224e0253434d4f413655c8c5cb1215d1fb10729bab3913505c5dbdb8ed24141c13202b8a5149e61b644232d8ecfdea67875a799e0cfd47e726d582dd38c9d658482b4931e81493b78583187a821c9ef5a90a3b02f57f2e9b07790e4cd8b69d6fb4b46b72e46b1523dd86484a979346ab9875ea2828a8da49695095354e3567c25abed8502143e7850202563f8663170a3a0fc4b28a5f49fb543b7bbfe0d195487d1a722575c7b6db35644372025f4533852e4fe4fcc4b4c70b27b42b7ea75f005ac8fe13626365f11bf21cbb5a2432827065eb61ba7f4fd70c1466a6bbd7d61919171e76a05e5452689917af3560b1b265c3ba77c638ab88d90dc6795d82492ae033797a62abec4f05ef59b7c060843d88fb5e686938b952d884a21b4b8a8597b1ce7c26a1798a9e56d005a246f2c05fb01b02f707c992247711b7d2f70f43089c041e3e8807fe56e304aa68c13d26680730873869dc63e9326e7330211a8db372dcc428dc322808d8b5bf9567ba4a6631a4e91c5cde5d276c50fd543f278d9bfe46ef4756df6ab9fe8f9d54ccc86cf9075a74ee7e31db137d6f7f35505878f6c55af82d6df5a6ddefa19e566245cdc59d9f729c9c12bf1d3899bf026eb82c85df6ef3e83da6dca33bba95f97d8bfce50c4df07c6a1ceae86e1aa3040f3e0a64b15a83914e7aebd156000e22a3d132fd2665906ae5f0a4e63f6ea9f4611a908bce3c70a3f4905bbeedae4c5a0b6c14da0230c676630d8373a65b10819db7a562b1df8d68673135e88e8b728801694b9cf42ba95829328b2e4cc9751fa561a7749923c595ba868c65dbcb077dba4378ae323e933021c1704b7297828a3fd2ca2a63dfe6ef9ff5dc92b48b8b85b4a195402505ec7d4b5f464835672e4a13f2cd6303e1566c9b5873f2afdd9309c89748362cb2ecb81b80acbadf4197abebc4a304a10a03c67eaf44cfc11edbe9cf3c27889ef80bea9618d767042aa452434b35988871703e0218d97f38e64ccf742f1fb8780ae4ee40dc5bd3c079e4e1a8d66e922b7e29b3af30e72874a6d329045fabedc77f60bb5235fee19cc949d4c4404f3459c9cf994732e52abfa32257d4ff1ff0312801ec85fec8128721032a33863fa6c1b929963fb9cb366878c986db919e9a76d4ba3646f1eb024b660eb0f00d100a90c42b1f336dcf35f520116d149a4dbefc3c956e6df737f6e640b0800f96b9955097ddbebd7499445761369ebe72a7a39fcba69de206efb54ca0fdbb207f4d4a74941f7875c4d796a815e1eaa28bb3491dc8694fd16059139ab402e7c09ce2c3f4ccf345246e7c7de60d25c8203c188ac93188fe750ceb3903c357d46cfb76119f909dad1eb8d9ffa1bf9442788bd649b3c7ebcf9e7407665c9e2e32873afa0ab51c50283eceae49bb3d8e3b22e26079bfbe69c37e6ecd72a561b6810bd0aadaf0f479230ad03b549eb08ae82a65c58fdb19961431166bc83a715d8182b0b6abb74958ebce6fbd6383581361d01bae4b339963eb3662bbd7271f9b6c8841f7322547a943fae7f10a4b3268a6e663ef4d6ef91189efd233ce7fcbaef8e67f03de07fd9dd7e6c9317b826305c1368dd5a3dfed3a760e42eedec6423aeb15cc45f21d79b9a6f930d2ffc9c5214a8517b218d632b2be66989af9dc7d2a81920734c04837ed27363c186ef8551848cbd1f2e55eb7377a487798f53da7cfd8d0eed6cb284380aec70588695e4c717c01b523eb4d79a0db17cbcdffc831f88666973f88d4298ee0813513704597ee5c9e80738e37530b951f9f661285adb699af7229643f547adc014a811d9437b09870f97f905650e7d7a2f53433ea304936087bdf5917084639210a94cb67f4b4021a3fc9fdb5cfd269aee8867b5fe763a1519ad5d1e1732879fbd51981fa055683d596bbd92d06b56f518cbb38ef0f2dd7d7d95f4c59da1522fa024db155d7742a78075b874b8fa6c0e738be89c2cba50560beae1f7207528eab0d285dd9fe7c0603e9c977d59028da9e9388fa0f40dfba3e8dfb6e63f96e796b91fbfabd4c4cd93c3b495a7207791e956ec2c2ba532798d43c556080ab1e5135ab207db8a276768033e6f35d313603d46340d5f6f90bf1b69f58ffda6940349d6f3bd98099766b7aa99b9ccf9e31f374d5296328ba58e431a50243e957961892ad77d0f4850ad894fb26e7d45987e5e0d242a60c85433f22ff1bcc633532eaf89c4af69fe4adb086c94b12c98971f84e84b49fee1a3a82a10db6649afafbc7c2bab6b88e3e53df6c297ff78fa857b9871ccabb770f3e20d99073b60561fd1d3b0761b4da683810d9f2e3c92b60ff3ce7dc4b9d6e212c37391a72805538a0e00b8a31138126e48afd5142970bb55ac2779bb1ffd385c3dab3cae063918fcb2baee4a3caee3e400db74d2d9e0647dabb5b78e7d00af46408f399daed1c9c17deb10225e10c433f492e2e32c213c4c23cc07fb408d405fa2b9abe76e90743560e6c3986ce94c6d0fa287ef7dfed36abfb515bd89bd316d69d7c32218bad820ea008508d1e443efe9683d4c4fe462e74d6dd2bc44fd6318c444bf277ad40d4a987d6eaf1b7f17aae50d920a773eff5be68144646eba61b0bbdd7f7a4f416fd104026635aa6426bbd783b0c64179418dcc6c52ed00014fe1dbefe9f8c27f54247bf16c47c0871c5ec91751afc13802eb312c19a3d85935957c8672c6d1aa2fb16f1902b3c7b140f43ce71c4cff6486da58fa8268b7d1c5f90ead9b09e6b4728fd0702c75d3684b8842bc322408b46aa5698f77178e58f1570597ae8a8bf8e3d99bb3d0fbc655f121a0e1f37b4c8777276ab5a737b9915d63497c2c98c6937c1d01d6e350faa3255aaa3428745096af55562a36ac5daa5b6bc56c170a3d33d7b614297900f497efffb37351389e0549f27b8be736f1eef6353e9a92d45bfa90838cd9e3970f7bae285c7dd8ac69a48c71cb60eef09b4da3f56a5473d67c93218e66ead119e31edf796dffdb2d300645581b866dd55cf0e88da05001faaf8e4652c91476a0309b385a6cd1e612b1f2dd37bcee30d26914bd3df5c324b42626c927633fb03fa89d68c2bcb6a7a03805addafc41debfd88d4dc96812160041e41fd5355eef69f69ce8f2836036d088ae0c14730437862aadcf3de2196fccd38e699c8b00bc5dd0291857e8d95ae670a73b2dd55b04674928469226bcef9b7a2266b1b09e49304ec690d9c355513b15bacdce2c16ef65c1ffc6e0448a00acae9ae20572218328c6383b6aa3f5f39331f30578b58cf0a885fe450d48b6ebb2777621ce814cb0e01ba4a0424b1e8523d2a9717b920fc02076ae8fd68a6df10fcd8e74879ab3d7d32a24a143dba78c83f3ced9a1f044fbd258060d8d8da85fc3bb3894d1027e6c113c8fd44c2a01583e5c56517c4cfa3d6d42b4934d3fd2f329c8ff46d5b3b51d3cd2952a69b2d2b0ac0932f3302f10ab3de8d9087b32143120676d3766782320be832c16f129e269299d7fc930ecc6f364be5fc99c76888f2e4b84a202db98cc4da6a68c9033a397e8ef673562edf4de3d68d67fb01b969f1d0345604cdabe5b266f4ced82d60100e10317bdd0701d182100f2778528d01bd8972c056904449db5672217fca96268a0569ff99167d8689a65b522199d6c4e69a5486485c07dbcc0448cc3e6a58769fe766e0dc565a11710ca1a628fb3e5b1074a4a12091537f56ae5a0b6172ab46f495b24e006ec9dd3918368029d78ca84e92088eeba0bb60fb586a1e5c1fae744ad65b8c6621a7d6cf0c5e9d52935dcd4e6651d4a5913eb403e13237bd7d8388ac4d5fddc9bcd3772b24d747dd5c3b9c0fefa756f50c9bf98c04a6a3d735ab816a6ed1d0305e23da99f93f73c4f03775b70381f082232be300c906483adac3667f20528e7b8c5e70e40e30b735f736195bb7ccef9f593e4ff6d0fabea888e2495a7f869eed62fc5d4775defb45d302c510120897d5df5800706acd01007f30bb909af31a71b07eb22357a4b63bc87aab79d96ee7aea851a6e935c291d72e29994ae61f057f6d1e8274100accc4a61ec682f5e7633b0cc9b22ac6a9212d841bf1aa5a88875c976279ca05139f460b5c5309da21436232cec6abb9858ce2570094494e2f841d4e4af018b5dfb816d2c28f5c2b5f801c1a798832fc75ce8adae765654dd61fd59a1720236d4c6f1e5ea7b344b7763f395870ed2d1296d36544c2f2d511646df7e0ae29d75315089a2bf13d1342864ad5b3c9</script>
-  <div class="hbe hbe-content">
-    <div class="hbe hbe-input hbe-input-default">
-      <input class="hbe hbe-input-field hbe-input-field-default" type="password" id="hbePass">
-      <label class="hbe hbe-input-label hbe-input-label-default" for="hbePass">
-        <span class="hbe hbe-input-label-content hbe-input-label-content-default">请输入密码</span>
-      </label>
-    </div>
-  </div>
-</div>
-<script data-pjax src="/lib/hbe.js"></script><link href="/css/hbe.style.css" rel="stylesheet" type="text/css">
-              
+              <div class="markdown-body">
+                
+                <p>本文首发于奇安信攻防社区：<a target="_blank" rel="noopener" href="https://forum.butian.net/share/2059">https://forum.butian.net/share/2059</a></p>
+<p>本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。</p>
+<h2 id="0x00-漏洞简介"><a href="#0x00-漏洞简介" class="headerlink" title="0x00 漏洞简介"></a>0x00 漏洞简介</h2><p>2022年12月出的漏洞，影响很大但目前没有 <code>CVE</code> 编号，起源是某大佬在跳跳糖发的一篇文章，<code>ThinkPHP</code> 在开启多语言的情况下，存在文件包含漏洞，配合 <code>pearcmd</code> 可以 <code>getshell</code>，大佬牛*。</p>
+<h2 id="0x01-漏洞影响"><a href="#0x01-漏洞影响" class="headerlink" title="0x01 漏洞影响"></a>0x01 漏洞影响</h2><p><code>ThinkPHP5.x</code> 全版本，现已修复，修复链接： <a target="_blank" rel="noopener" href="https://github.com/top-think/framework/commit/450450a1e38c5897c8d1cbd167068660632fdb27">https://github.com/top-think/framework/commit/450450a1e38c5897c8d1cbd167068660632fdb27</a></p>
+<p><code>ThinkPHP6.0.13</code> 及之前，<code>6.0.14</code> 版本已修复</p>
+<h2 id="0x02-环境搭建"><a href="#0x02-环境搭建" class="headerlink" title="0x02 环境搭建"></a>0x02 环境搭建</h2><p>本文以 <code>ThinkPHP5.1.41</code> 为例。</p>
+<p>使用 <code>composer</code> 快速搭建 <code>thinkphp5.1.41</code> 系列最新版环境</p>
+<figure class="highlight dsconfig"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs dsconfig"><span class="hljs-string">composer</span> <span class="hljs-built_in">create-project</span> <span class="hljs-string">topthink</span>/<span class="hljs-string">think</span>=<span class="hljs-string">5</span>.<span class="hljs-string">1</span>.<span class="hljs-string">41</span> <span class="hljs-string">tp5</span>.<span class="hljs-string">1</span>.<span class="hljs-string">41</span><br></code></pre></td></tr></table></figure>
 
-              
+<p>这样安装的 <code>topthink/framework</code> 使用的是最新版已经修补了的，因此我们需要进入 <code>tp5.1.41</code> 文件夹，将 <code>composer.json</code> 中的 <code>&quot;topthink/framework&quot;: &quot;5.1.*&quot;</code> 修改为 <code>&quot;topthink/framework&quot;: &quot;5.1.41&quot;</code> ，然后执行 <code>composer update</code></p>
+<p>此漏洞需要开启多语言功能才可以使用，在 <code>5.x</code> 系列开启的方式如下</p>
+<p>文件 <code>config/app.php</code> 中可以设置</p>
+<figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs dart"><span class="hljs-string">&#x27;lang_switch_on&#x27;</span>         =&gt; <span class="hljs-keyword">true</span>,<br></code></pre></td></tr></table></figure>
+
+<h2 id="0x03-漏洞分析"><a href="#0x03-漏洞分析" class="headerlink" title="0x03 漏洞分析"></a>0x03 漏洞分析</h2><p>分析部分将根据官方的修复来寻找漏洞点位，这也是常用的寻找 <code>1day</code> 的方式。</p>
+<p>我们可以先看看官方的修复：<a target="_blank" rel="noopener" href="https://github.com/top-think/framework/commit/450450a1e38c5897c8d1cbd167068660632fdb27">https://github.com/top-think/framework/commit/450450a1e38c5897c8d1cbd167068660632fdb27</a></p>
+<p><img src="image-20221211205635382.png" srcset="/img/loading.gif" lazyload alt="image-20221211205635382"></p>
+<p>这里 <code>commit</code> 的时候就很明显地说了是改进多语言判断机制，修复的代码实际上就是在做一件事，对 <code>$langSet</code> 进行过滤。</p>
+<p>接下来我们跟进代码进行分析，上面的代码位于 <code>thinkphp/library/think/Lang.php</code> 文件中的 <code>detect</code> 方法</p>
+<p><img src="image-20221211211137582.png" srcset="/img/loading.gif" lazyload alt="image-20221211211137582"></p>
+<p>我们此处是存在漏洞的代码，也就是没有进行过滤的，修复代码是在 219 行对 <code>$langSet</code> 增加过滤</p>
+<p>先看 <code>$langSet</code> 是如何得到的，有三种方式：</p>
+<p>第一种方式，直接 <code>GET</code> 方式获取，参数名为 <code>$this-&gt;langDetectVar</code> 的值，这个值的默认定位如下</p>
+<figure class="highlight lasso"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs lasso"><span class="hljs-keyword">protected</span> $langDetectVar = <span class="hljs-string">&#x27;lang&#x27;</span>;<br></code></pre></td></tr></table></figure>
+
+<p>也就是 <code>GET</code> 一个 <code>lang</code> 即可获取 <code>langSet</code></p>
+<p>第二种方式，通过 <code>COOKIE</code> 获取，参数如上也是 <code>lang</code></p>
+<p>第三种方式，通过 <code>$_SERVER[&#39;HTTP_ACCEPT_LANGUAGE&#39;]</code> ，这也是我们可以控制的，但是他存在过滤代码，因此这里我们不好利用</p>
+<p>根据如上三种方式，那么这个 <code>$langSet</code> 是轻易可控的</p>
+<p>看到下面的代码，判断如果 <code>$this-&gt;allowLangList</code> 是否为空，或者 <code>$langSet</code> 是否在该数组中，这里的 <code>$this-&gt;allowLangList</code> 默认是为空的，因此会进入 <code>if</code> 语句内部，这时就会将我们可控的 <code>$langSet</code> 直接赋值给 <code>$this-&gt;range</code> ，然后将其返回</p>
+<p>通过上述代码，可知存在漏洞的版本中，这个 <code>detect</code> 方法的返回值是完全可控的，接下来我们就是去找此方法的调用位置，直接搜索即可</p>
+<p><img src="image-20221211213441255.png" srcset="/img/loading.gif" lazyload alt="image-20221211213441255"></p>
+<p>第二条就是调用 <code>detect</code> 方法，跟进代码</p>
+<p><img src="image-20221211213528442.png" srcset="/img/loading.gif" lazyload alt="image-20221211213528442"></p>
+<p>代码中加载了当前的配置，然后查询 <code>app.lang_switch_on</code> ，这是开启多语言机制的标志，当返回为 <code>true</code> 时即可调用到我们可控的 <code>detect</code> 方法，这时就会使得 <code>$this-&gt;lang</code> 中的 <code>range</code> 变量是可控的，跟进  465 行</p>
+<p><code>$this-&gt;lang-&gt;range()</code> 方法</p>
+<p><img src="image-20221211213941091.png" srcset="/img/loading.gif" lazyload alt="image-20221211213941091"></p>
+<p>返回 <code>$this-&gt;range</code> ，这个值前面说过了，完全可控，继续跟进</p>
+<p><code>$this-&gt;request-&gt;setLangset()</code> 方法，参数是上面的可控值</p>
+<p><img src="image-20221211215023454.png" srcset="/img/loading.gif" lazyload alt="image-20221211215023454"></p>
+<p>直接将参数 <code>$lang</code> 赋值给了 <code>$this-&gt;langset</code>，因此现在 <code>$this-&gt;langset</code> 可控</p>
+<p>接下来回到上面的加载系统语言包</p>
+<p><img src="image-20221211215349963.png" srcset="/img/loading.gif" lazyload alt="image-20221211215349963"></p>
+<p>看到 <code>$this-&gt;request-&gt;langset()</code></p>
+<p><img src="image-20221211215302978.png" srcset="/img/loading.gif" lazyload alt="image-20221211215302978"></p>
+<p>直接返回 <code>$this-&gt;langset</code> ，而这个值可控，我们可以通过设置成 <code>../../xxx</code> 的形式获取到任意位置的 <code>php</code> 文件，限制了后缀，因此只能是 <code>php</code> 文件</p>
+<p>因此 <code>$this-&gt;lang-&gt;load()</code> 方法的参数可以是任意位置的 <code>php</code> 文件组成的数组，跟进该方法看看</p>
+<p><img src="image-20221211215700865.png" srcset="/img/loading.gif" lazyload alt="image-20221211215700865"></p>
+<p>代码很容易看懂，遍历传进来的数组，最后 <code>include</code> 该文件，因此这里我们可以实现包含任意位置的 <code>php</code> 文件</p>
+<p>最后就是寻找 <code>loadLangPack</code> 方法调用的位置，发现在 <code>thinkphp/library/think/App.php</code> 的 <code>initialize</code> 方法中，直接被调用</p>
+<p><img src="image-20221211230716565.png" srcset="/img/loading.gif" lazyload alt="image-20221211230716565"></p>
+<p>这个 <code>initialize</code> 方法是初始化 <code>thinkphp</code> 的应用，运行时一定会调用。</p>
+<p>由上面的就能知道该漏洞只要在开启了多语言机制，访问任何页面都会触发。调用链如下</p>
+<figure class="highlight livescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs livescript">访问 -&gt; initialize<span class="hljs-function"><span class="hljs-params">()</span> -&gt;</span> loadLangPack<span class="hljs-function"><span class="hljs-params">()</span> -&gt;</span> $this-&gt;lang-&gt;load<span class="hljs-function"><span class="hljs-params">()</span> -&gt;</span> include file<br></code></pre></td></tr></table></figure>
+
+<h2 id="0x04-漏洞复现"><a href="#0x04-漏洞复现" class="headerlink" title="0x04 漏洞复现"></a>0x04 漏洞复现</h2><p>该漏洞有个最大的限制点就是被包含的文件后缀一定是 <code>php</code> ，要包含一个 <code>php</code> 文件，利用的方式就少了，但我们可以利用 <code>pearcmd</code>  ，参考链接：<a target="_blank" rel="noopener" href="https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html#0x06-pearcmdphp">https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html#0x06-pearcmdphp</a></p>
+<p>利用 <code>pearcmd</code> 需要满足条件：</p>
+<ol>
+<li>安装了该 <code>pear</code> 库</li>
+<li>开启 <code>register_argc_argv</code> 配置</li>
+</ol>
+<p>常规的环境一般很少会安装 <code>pear</code> 库，也不会开启 <code>register_argc_argv</code> 配置，但是 <code>php</code> 的官方 <code>docker</code> 环境默认会有该库，并且 <code>register_argc_argv</code> 也会被打开，这里我开了一个使用 <code>php</code> 官方 <code>docker</code> 环境的 <code>docker</code> ，可以看到默认有 <code>pear</code></p>
+<p><img src="image-20221212001719765.png" srcset="/img/loading.gif" lazyload alt="image-20221212001719765"></p>
+<p>此处就借助该 <code>docker</code> 进行漏洞复现，使用了官方的 <code>docker</code> ，就只需要打开多语言即可，然后就可以进行利用，<code>pearcmd</code> 的利用方法就不多讲了，可以看上面提供的链接</p>
+<p><img src="image-20221212141847902.png" srcset="/img/loading.gif" lazyload alt="image-20221212141847902"></p>
+<p>这时候就可以看到 <code>/tmp</code> 目录下写入了一个 <code>hello.php</code> 文件</p>
+<p><img src="image-20221212142110044.png" srcset="/img/loading.gif" lazyload alt="image-20221212142110044"></p>
+<p>其实这里也不是单纯地将 <code>&lt;?=phpinfo()?&gt;</code> 写入了，而是一个序列化后的数据，但对 <code>php</code> 执行不影响，我们再利用本文的漏洞对该 <code>/tmp/hello.php</code> 文件进行包含</p>
+<p><img src="image-20221212142317211.png" srcset="/img/loading.gif" lazyload alt="image-20221212142317211"></p>
+<h2 id="0x05-总结"><a href="#0x05-总结" class="headerlink" title="0x05 总结"></a>0x05 总结</h2><p>总体来说，感觉这个洞的限制还是比较多的，多语言机制可能还好，开这个的估计也不在少数，但是文件包含的限制比较不好弄，因为限制了 <code>php</code> 的后缀，虽然可以通过 <code>pear</code> 来 <code>getshell</code> ，但是一般环境默认不存在，让这个洞 <code>getshell</code> 的几率大大降低了。</p>
+
+                
+              </div>
             
             <hr/>
             <div>
@@ -378,7 +452,7 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>ThinkPHP_6.0.13_文件包含漏洞（密码保护）</div>
+      <div>ThinkPHP_6.0.13_文件包含漏洞</div>
       <div>https://n0puple.github.io/2022/12/11/ThinkPHP-6-0-13-文件包含漏洞/</div>
     </div>
     <div class="license-meta">
@@ -433,8 +507,8 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2022/12/09/ThinkPHP-5-1-41-%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0getshell-CVE-2022-44289/" title="ThinkPHP_5.1.41_文件上传getshell_CVE-2022-44289（密码保护）">
-                        <span class="hidden-mobile">ThinkPHP_5.1.41_文件上传getshell_CVE-2022-44289（密码保护）</span>
+                      <a href="/2022/12/09/ThinkPHP-5-1-41-%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0getshell-CVE-2022-44289/" title="ThinkPHP_5.1.41_文件上传getshell_CVE-2022-44289">
+                        <span class="hidden-mobile">ThinkPHP_5.1.41_文件上传getshell_CVE-2022-44289</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
@@ -640,23 +714,6 @@
   
 
 
-
-
-  
-  <script defer>
-    if (document.getElementById('hbePass')) {
-      Fluid.utils.waitElementLoaded('hbe-prefix', function() {
-        var hbePrefix = document.querySelector('hbe-prefix');
-        hbePrefix.parentElement.classList.add('markdown-body');
-        Fluid.utils.retry(function() {
-          if (Fluid.boot && Fluid.boot.refresh) {
-            Fluid.boot.refresh();
-            return true;
-          }
-        }, 100, 10);
-      })
-    }
-  </script>
 
 
   
