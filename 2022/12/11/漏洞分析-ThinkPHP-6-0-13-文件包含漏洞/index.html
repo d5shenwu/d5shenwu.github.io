@@ -1,0 +1,831 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/myavatar.png">
+  <link rel="icon" href="/img/myavatar.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="d5shenwu">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="本文首发于奇安信攻防社区：https:&#x2F;&#x2F;forum.butian.net&#x2F;share&#x2F;2059 本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。 0x00 漏洞简介2022年12月出的漏洞，影响很大但目前没有 CVE 编号，起源是某大佬在跳跳糖发的一篇文章，ThinkPHP 在开启多语言的情况下，存在文件包含漏洞，配合 pearc">
+<meta property="og:type" content="article">
+<meta property="og:title" content="漏洞分析: ThinkPHP_6.0.13_文件包含漏洞">
+<meta property="og:url" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/index.html">
+<meta property="og:site_name" content="第五深雾&#39;s Blog">
+<meta property="og:description" content="本文首发于奇安信攻防社区：https:&#x2F;&#x2F;forum.butian.net&#x2F;share&#x2F;2059 本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。 0x00 漏洞简介2022年12月出的漏洞，影响很大但目前没有 CVE 编号，起源是某大佬在跳跳糖发的一篇文章，ThinkPHP 在开启多语言的情况下，存在文件包含漏洞，配合 pearc">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211205635382.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211211137582.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211213441255.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211213528442.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211213941091.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211215023454.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211215349963.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211215302978.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211215700865.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211230716565.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221212001719765.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221212141847902.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221212142110044.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221212142317211.png">
+<meta property="article:published_time" content="2022-12-10T16:15:44.000Z">
+<meta property="article:modified_time" content="2023-12-15T15:24:30.904Z">
+<meta property="article:author" content="d5shenwu">
+<meta property="article:tag" content="PHP">
+<meta property="article:tag" content="ThinkPHP">
+<meta property="article:tag" content="getshell">
+<meta property="article:tag" content="文件包含漏洞">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://d5shenwu.github.io/2022/12/11/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-6-0-13-%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/image-20221211205635382.png">
+  
+  
+  
+  <title>漏洞分析: ThinkPHP_6.0.13_文件包含漏洞 - 第五深雾&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"d5shenwu.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":"NDNgppjVEEzr7sUejJFVueds-gzGzoHsz","app_key":"E6rBuy0l5xXiIjq6GA24XI5J","server_url":"https://ndngppjv.lc-cn-n1-shared.com","path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+
+
+  
+<meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="第五深雾's Blog" type="application/atom+xml">
+</head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 40vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>第五深雾&#39;s Blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/">
+                <i class="iconfont icon-link-fill"></i>
+                友链
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="漏洞分析: ThinkPHP_6.0.13_文件包含漏洞"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-12-11 00:15" pubdate>
+          2022年12月11日 凌晨
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          26 分钟
+        
+      </span>
+    
+
+    
+    
+      
+        <span id="leancloud-page-views-container" class="post-meta" style="display: none">
+          <i class="iconfont icon-eye" aria-hidden="true"></i>
+          <span id="leancloud-page-views"></span> 次
+        </span>
+        
+      
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">漏洞分析: ThinkPHP_6.0.13_文件包含漏洞</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>本文首发于奇安信攻防社区：<a target="_blank" rel="noopener" href="https://forum.butian.net/share/2059">https://forum.butian.net/share/2059</a></p>
+<p>本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。</p>
+<h2 id="0x00-漏洞简介"><a href="#0x00-漏洞简介" class="headerlink" title="0x00 漏洞简介"></a>0x00 漏洞简介</h2><p>2022年12月出的漏洞，影响很大但目前没有 <code>CVE</code> 编号，起源是某大佬在跳跳糖发的一篇文章，<code>ThinkPHP</code> 在开启多语言的情况下，存在文件包含漏洞，配合 <code>pearcmd</code> 可以 <code>getshell</code>，大佬牛*。</p>
+<h2 id="0x01-漏洞影响"><a href="#0x01-漏洞影响" class="headerlink" title="0x01 漏洞影响"></a>0x01 漏洞影响</h2><p><code>ThinkPHP5.x</code> 全版本，现已修复，修复链接： <a target="_blank" rel="noopener" href="https://github.com/top-think/framework/commit/450450a1e38c5897c8d1cbd167068660632fdb27">https://github.com/top-think/framework/commit/450450a1e38c5897c8d1cbd167068660632fdb27</a></p>
+<p><code>ThinkPHP6.0.13</code> 及之前，<code>6.0.14</code> 版本已修复</p>
+<h2 id="0x02-环境搭建"><a href="#0x02-环境搭建" class="headerlink" title="0x02 环境搭建"></a>0x02 环境搭建</h2><p>本文以 <code>ThinkPHP5.1.41</code> 为例。</p>
+<p>使用 <code>composer</code> 快速搭建 <code>thinkphp5.1.41</code> 系列最新版环境</p>
+<figure class="highlight dsconfig"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs dsconfig"><span class="hljs-string">composer</span> <span class="hljs-built_in">create-project</span> <span class="hljs-string">topthink</span>/<span class="hljs-string">think</span>=<span class="hljs-string">5</span>.<span class="hljs-string">1</span>.<span class="hljs-string">41</span> <span class="hljs-string">tp5</span>.<span class="hljs-string">1</span>.<span class="hljs-string">41</span><br></code></pre></td></tr></table></figure>
+
+<p>这样安装的 <code>topthink/framework</code> 使用的是最新版已经修补了的，因此我们需要进入 <code>tp5.1.41</code> 文件夹，将 <code>composer.json</code> 中的 <code>&quot;topthink/framework&quot;: &quot;5.1.*&quot;</code> 修改为 <code>&quot;topthink/framework&quot;: &quot;5.1.41&quot;</code> ，然后执行 <code>composer update</code></p>
+<p>此漏洞需要开启多语言功能才可以使用，在 <code>5.x</code> 系列开启的方式如下</p>
+<p>文件 <code>config/app.php</code> 中可以设置</p>
+<figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs dart"><span class="hljs-string">&#x27;lang_switch_on&#x27;</span>         =&gt; <span class="hljs-keyword">true</span>,<br></code></pre></td></tr></table></figure>
+
+<h2 id="0x03-漏洞分析"><a href="#0x03-漏洞分析" class="headerlink" title="0x03 漏洞分析"></a>0x03 漏洞分析</h2><p>分析部分将根据官方的修复来寻找漏洞点位，这也是常用的寻找 <code>1day</code> 的方式。</p>
+<p>我们可以先看看官方的修复：<a target="_blank" rel="noopener" href="https://github.com/top-think/framework/commit/450450a1e38c5897c8d1cbd167068660632fdb27">https://github.com/top-think/framework/commit/450450a1e38c5897c8d1cbd167068660632fdb27</a></p>
+<p><img src="image-20221211205635382.png" srcset="/img/loading.gif" lazyload alt="image-20221211205635382"></p>
+<p>这里 <code>commit</code> 的时候就很明显地说了是改进多语言判断机制，修复的代码实际上就是在做一件事，对 <code>$langSet</code> 进行过滤。</p>
+<p>接下来我们跟进代码进行分析，上面的代码位于 <code>thinkphp/library/think/Lang.php</code> 文件中的 <code>detect</code> 方法</p>
+<p><img src="image-20221211211137582.png" srcset="/img/loading.gif" lazyload alt="image-20221211211137582"></p>
+<p>我们此处是存在漏洞的代码，也就是没有进行过滤的，修复代码是在 219 行对 <code>$langSet</code> 增加过滤</p>
+<p>先看 <code>$langSet</code> 是如何得到的，有三种方式：</p>
+<p>第一种方式，直接 <code>GET</code> 方式获取，参数名为 <code>$this-&gt;langDetectVar</code> 的值，这个值的默认定位如下</p>
+<figure class="highlight lasso"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs lasso"><span class="hljs-keyword">protected</span> $langDetectVar = <span class="hljs-string">&#x27;lang&#x27;</span>;<br></code></pre></td></tr></table></figure>
+
+<p>也就是 <code>GET</code> 一个 <code>lang</code> 即可获取 <code>langSet</code></p>
+<p>第二种方式，通过 <code>COOKIE</code> 获取，参数如上也是 <code>lang</code></p>
+<p>第三种方式，通过 <code>$_SERVER[&#39;HTTP_ACCEPT_LANGUAGE&#39;]</code> ，这也是我们可以控制的，但是他存在过滤代码，因此这里我们不好利用</p>
+<p>根据如上三种方式，那么这个 <code>$langSet</code> 是轻易可控的</p>
+<p>看到下面的代码，判断如果 <code>$this-&gt;allowLangList</code> 是否为空，或者 <code>$langSet</code> 是否在该数组中，这里的 <code>$this-&gt;allowLangList</code> 默认是为空的，因此会进入 <code>if</code> 语句内部，这时就会将我们可控的 <code>$langSet</code> 直接赋值给 <code>$this-&gt;range</code> ，然后将其返回</p>
+<p>通过上述代码，可知存在漏洞的版本中，这个 <code>detect</code> 方法的返回值是完全可控的，接下来我们就是去找此方法的调用位置，直接搜索即可</p>
+<p><img src="image-20221211213441255.png" srcset="/img/loading.gif" lazyload alt="image-20221211213441255"></p>
+<p>第二条就是调用 <code>detect</code> 方法，跟进代码</p>
+<p><img src="image-20221211213528442.png" srcset="/img/loading.gif" lazyload alt="image-20221211213528442"></p>
+<p>代码中加载了当前的配置，然后查询 <code>app.lang_switch_on</code> ，这是开启多语言机制的标志，当返回为 <code>true</code> 时即可调用到我们可控的 <code>detect</code> 方法，这时就会使得 <code>$this-&gt;lang</code> 中的 <code>range</code> 变量是可控的，跟进  465 行</p>
+<p><code>$this-&gt;lang-&gt;range()</code> 方法</p>
+<p><img src="image-20221211213941091.png" srcset="/img/loading.gif" lazyload alt="image-20221211213941091"></p>
+<p>返回 <code>$this-&gt;range</code> ，这个值前面说过了，完全可控，继续跟进</p>
+<p><code>$this-&gt;request-&gt;setLangset()</code> 方法，参数是上面的可控值</p>
+<p><img src="image-20221211215023454.png" srcset="/img/loading.gif" lazyload alt="image-20221211215023454"></p>
+<p>直接将参数 <code>$lang</code> 赋值给了 <code>$this-&gt;langset</code>，因此现在 <code>$this-&gt;langset</code> 可控</p>
+<p>接下来回到上面的加载系统语言包</p>
+<p><img src="image-20221211215349963.png" srcset="/img/loading.gif" lazyload alt="image-20221211215349963"></p>
+<p>看到 <code>$this-&gt;request-&gt;langset()</code></p>
+<p><img src="image-20221211215302978.png" srcset="/img/loading.gif" lazyload alt="image-20221211215302978"></p>
+<p>直接返回 <code>$this-&gt;langset</code> ，而这个值可控，我们可以通过设置成 <code>../../xxx</code> 的形式获取到任意位置的 <code>php</code> 文件，限制了后缀，因此只能是 <code>php</code> 文件</p>
+<p>因此 <code>$this-&gt;lang-&gt;load()</code> 方法的参数可以是任意位置的 <code>php</code> 文件组成的数组，跟进该方法看看</p>
+<p><img src="image-20221211215700865.png" srcset="/img/loading.gif" lazyload alt="image-20221211215700865"></p>
+<p>代码很容易看懂，遍历传进来的数组，最后 <code>include</code> 该文件，因此这里我们可以实现包含任意位置的 <code>php</code> 文件</p>
+<p>最后就是寻找 <code>loadLangPack</code> 方法调用的位置，发现在 <code>thinkphp/library/think/App.php</code> 的 <code>initialize</code> 方法中，直接被调用</p>
+<p><img src="image-20221211230716565.png" srcset="/img/loading.gif" lazyload alt="image-20221211230716565"></p>
+<p>这个 <code>initialize</code> 方法是初始化 <code>thinkphp</code> 的应用，运行时一定会调用。</p>
+<p>由上面的就能知道该漏洞只要在开启了多语言机制，访问任何页面都会触发。调用链如下</p>
+<figure class="highlight livescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs livescript">访问 -&gt; initialize<span class="hljs-function"><span class="hljs-params">()</span> -&gt;</span> loadLangPack<span class="hljs-function"><span class="hljs-params">()</span> -&gt;</span> $this-&gt;lang-&gt;load<span class="hljs-function"><span class="hljs-params">()</span> -&gt;</span> include file<br></code></pre></td></tr></table></figure>
+
+<h2 id="0x04-漏洞复现"><a href="#0x04-漏洞复现" class="headerlink" title="0x04 漏洞复现"></a>0x04 漏洞复现</h2><p>该漏洞有个最大的限制点就是被包含的文件后缀一定是 <code>php</code> ，要包含一个 <code>php</code> 文件，利用的方式就少了，但我们可以利用 <code>pearcmd</code>  ，参考链接：<a target="_blank" rel="noopener" href="https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html#0x06-pearcmdphp">https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html#0x06-pearcmdphp</a></p>
+<p>利用 <code>pearcmd</code> 需要满足条件：</p>
+<ol>
+<li>安装了该 <code>pear</code> 库</li>
+<li>开启 <code>register_argc_argv</code> 配置</li>
+</ol>
+<p>常规的环境一般很少会安装 <code>pear</code> 库，也不会开启 <code>register_argc_argv</code> 配置，但是 <code>php</code> 的官方 <code>docker</code> 环境默认会有该库，并且 <code>register_argc_argv</code> 也会被打开，这里我开了一个使用 <code>php</code> 官方 <code>docker</code> 环境的 <code>docker</code> ，可以看到默认有 <code>pear</code></p>
+<p><img src="image-20221212001719765.png" srcset="/img/loading.gif" lazyload alt="image-20221212001719765"></p>
+<p>此处就借助该 <code>docker</code> 进行漏洞复现，使用了官方的 <code>docker</code> ，就只需要打开多语言即可，然后就可以进行利用，<code>pearcmd</code> 的利用方法就不多讲了，可以看上面提供的链接</p>
+<p><img src="image-20221212141847902.png" srcset="/img/loading.gif" lazyload alt="image-20221212141847902"></p>
+<p>这时候就可以看到 <code>/tmp</code> 目录下写入了一个 <code>hello.php</code> 文件</p>
+<p><img src="image-20221212142110044.png" srcset="/img/loading.gif" lazyload alt="image-20221212142110044"></p>
+<p>其实这里也不是单纯地将 <code>&lt;?=phpinfo()?&gt;</code> 写入了，而是一个序列化后的数据，但对 <code>php</code> 执行不影响，我们再利用本文的漏洞对该 <code>/tmp/hello.php</code> 文件进行包含</p>
+<p><img src="image-20221212142317211.png" srcset="/img/loading.gif" lazyload alt="image-20221212142317211"></p>
+<h2 id="0x05-总结"><a href="#0x05-总结" class="headerlink" title="0x05 总结"></a>0x05 总结</h2><p>总体来说，感觉这个洞的限制还是比较多的，多语言机制可能还好，开这个的估计也不在少数，但是文件包含的限制比较不好弄，因为限制了 <code>php</code> 的后缀，虽然可以通过 <code>pear</code> 来 <code>getshell</code> ，但是一般环境默认不存在，让这个洞 <code>getshell</code> 的几率大大降低了。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" class="category-chain-item">漏洞分析</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/PHP/">#PHP</a>
+      
+        <a href="/tags/ThinkPHP/">#ThinkPHP</a>
+      
+        <a href="/tags/getshell/">#getshell</a>
+      
+        <a href="/tags/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/">#文件包含漏洞</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>漏洞分析: ThinkPHP_6.0.13_文件包含漏洞</div>
+      <div>https://d5shenwu.github.io/2022/12/11/漏洞分析-ThinkPHP-6-0-13-文件包含漏洞/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>d5shenwu</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年12月11日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/12/14/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-%E9%80%9A%E8%BE%BEOA-11-7-%E5%89%8D%E5%8F%B0RCE-%E5%88%86%E6%9E%90/" title="漏洞分析: 通达OA_11.7_前台RCE_分析">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">漏洞分析: 通达OA_11.7_前台RCE_分析</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/12/09/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90-ThinkPHP-5-1-41-%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0getshell-CVE-2022-44289/" title="漏洞分析: ThinkPHP_5.1.41_文件上传getshell_CVE-2022-44289">
+                        <span class="hidden-mobile">漏洞分析: ThinkPHP_5.1.41_文件上传getshell_CVE-2022-44289</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  <article id="comments" lazyload>
+    
+  <div id="valine"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#valine', function() {
+      Fluid.utils.createScript('https://lib.baomitu.com/valine/1.5.1/Valine.min.js', function() {
+        var options = Object.assign(
+          {"appId":"NDNgppjVEEzr7sUejJFVueds-gzGzoHsz","appKey":"E6rBuy0l5xXiIjq6GA24XI5J","path":"window.location.pathname","placeholder":"ヾﾉ≧∀≦)o来发表评论啊~","avatar":"retro","meta":["nick","mail"],"requiredFields":["nick"],"pageSize":10,"lang":"zh-CN","highlight":false,"recordIP":false,"serverURLs":"","emojiCDN":null,"emojiMaps":null,"enableQQ":false},
+          {
+            el: "#valine",
+            path: window.location.pathname
+          }
+        )
+        new Valine(options);
+        Fluid.utils.waitElementVisible('#valine .vcontent', () => {
+          var imgSelector = '#valine .vcontent img:not(.vemoji)';
+          Fluid.plugins.imageCaption(imgSelector);
+          Fluid.plugins.fancyBox(imgSelector);
+        })
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+  </article>
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+    <div class="statistics">
+  
+  
+
+  
+    
+      <span id="leancloud-site-pv-container" style="display: none">
+        总访问量 
+        <span id="leancloud-site-pv"></span>
+         次
+      </span>
+    
+    
+      <span id="leancloud-site-uv-container" style="display: none">
+        总访客数 
+        <span id="leancloud-site-uv"></span>
+         人
+      </span>
+    
+    
+
+  
+</div>
+
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script defer src="/js/leancloud.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
