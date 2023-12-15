@@ -15,26 +15,26 @@
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   
   <meta name="theme-color" content="#2f4154">
-  <meta name="author" content="N0puple">
+  <meta name="author" content="d5shenwu">
   <meta name="keywords" content="">
   
     <meta name="description" content="本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。 0x00 漏洞简介先后在两篇文章中看到了这个cms，利用方式感觉很有意思，遂跟着复现一波写下了这篇文章。 0x01 影响范围影响在此修复之前的版本  https:&#x2F;&#x2F;gitee.com&#x2F;dayrui&#x2F;xunruicms&#x2F;commit&#x2F;80e2d8f3008384d926c64163b">
 <meta property="og:type" content="article">
 <meta property="og:title" content="XunRuiCMS_变量覆盖导致的前台RCE">
-<meta property="og:url" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/index.html">
-<meta property="og:site_name" content="N0puple&#39;s Blog">
+<meta property="og:url" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/index.html">
+<meta property="og:site_name" content="第五shenwu&#39;s Blog">
 <meta property="og:description" content="本文仅用于技术讨论与研究，文中的实现方法切勿应用在任何违法场景。如因涉嫌违法造成的一切不良影响，本文作者概不负责。 0x00 漏洞简介先后在两篇文章中看到了这个cms，利用方式感觉很有意思，遂跟着复现一波写下了这篇文章。 0x01 影响范围影响在此修复之前的版本  https:&#x2F;&#x2F;gitee.com&#x2F;dayrui&#x2F;xunruicms&#x2F;commit&#x2F;80e2d8f3008384d926c64163b">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644246657397-22191b3d-1b41-4a65-8632-f86a52e8d5bc.png">
-<meta property="og:image" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644247366176-b26669e0-0b2c-4766-a3bb-5e67f99e4f89.png">
-<meta property="og:image" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644324477787-3e232cfe-ed7f-436a-9a9e-5ea191e654a7.png">
-<meta property="og:image" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644324685908-e4ac4fa3-e46e-481d-93ff-1bb4f60f9311.png">
-<meta property="og:image" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644326182325-98df5d65-533c-44fb-81f5-4eec886f4a5b.png">
-<meta property="og:image" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644326537174-64b2314c-eb4b-4c14-b1a5-030f46e3d5c5.png">
-<meta property="og:image" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644334744634-94e79d78-cf97-4ec2-a5a3-d576a8405421.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644246657397-22191b3d-1b41-4a65-8632-f86a52e8d5bc.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644247366176-b26669e0-0b2c-4766-a3bb-5e67f99e4f89.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644324477787-3e232cfe-ed7f-436a-9a9e-5ea191e654a7.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644324685908-e4ac4fa3-e46e-481d-93ff-1bb4f60f9311.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644326182325-98df5d65-533c-44fb-81f5-4eec886f4a5b.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644326537174-64b2314c-eb4b-4c14-b1a5-030f46e3d5c5.png">
+<meta property="og:image" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644334744634-94e79d78-cf97-4ec2-a5a3-d576a8405421.png">
 <meta property="article:published_time" content="2022-01-25T02:28:26.000Z">
 <meta property="article:modified_time" content="2022-12-10T05:29:38.677Z">
-<meta property="article:author" content="N0puple">
+<meta property="article:author" content="d5shenwu">
 <meta property="article:tag" content="PHP">
 <meta property="article:tag" content="未授权漏洞">
 <meta property="article:tag" content="RCE">
@@ -43,11 +43,11 @@
 <meta property="article:tag" content="XunRuiCMS">
 <meta property="article:tag" content="变量覆盖">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://n0puple.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644246657397-22191b3d-1b41-4a65-8632-f86a52e8d5bc.png">
+<meta name="twitter:image" content="https://d5shenwu.github.io/2022/01/25/XunRuiCMS-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E5%AF%BC%E8%87%B4%E7%9A%84%E5%89%8D%E5%8F%B0RCE/1644246657397-22191b3d-1b41-4a65-8632-f86a52e8d5bc.png">
   
   
   
-  <title>XunRuiCMS_变量覆盖导致的前台RCE - N0puple&#39;s Blog</title>
+  <title>XunRuiCMS_变量覆盖导致的前台RCE - 第五shenwu&#39;s Blog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -85,7 +85,7 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"n0puple.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":"NDNgppjVEEzr7sUejJFVueds-gzGzoHsz","app_key":"E6rBuy0l5xXiIjq6GA24XI5J","server_url":"https://ndngppjv.lc-cn-n1-shared.com","path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+    var CONFIG = {"hostname":"d5shenwu.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":"NDNgppjVEEzr7sUejJFVueds-gzGzoHsz","app_key":"E6rBuy0l5xXiIjq6GA24XI5J","server_url":"https://ndngppjv.lc-cn-n1-shared.com","path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
@@ -115,7 +115,7 @@
 
 
   
-<meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="N0puple's Blog" type="application/atom+xml">
+<meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="第五shenwu's Blog" type="application/atom+xml">
 </head>
 
 
@@ -425,13 +425,13 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>XunRuiCMS_变量覆盖导致的前台RCE</div>
-      <div>https://n0puple.github.io/2022/01/25/XunRuiCMS-变量覆盖导致的前台RCE/</div>
+      <div>https://d5shenwu.github.io/2022/01/25/XunRuiCMS-变量覆盖导致的前台RCE/</div>
     </div>
     <div class="license-meta">
       
         <div class="license-meta-item">
           <div>作者</div>
-          <div>N0puple</div>
+          <div>d5shenwu</div>
         </div>
       
       
